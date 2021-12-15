@@ -24,7 +24,7 @@
     "lodash.merge": "^4.6.2",
     "nanoid": "^3.1.30",
     "parcel": "^2.0.1",
-    "wglt": "^0.2.5"
+    "wglt": "github:codyebberson/wglt#6f96b2e"
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.1",

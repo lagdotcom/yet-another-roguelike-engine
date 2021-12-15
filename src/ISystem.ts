@@ -1,3 +1,4 @@
-export default interface ISystem {
+interface ISystem {
   process(): void;
 }
+export default ISystem;

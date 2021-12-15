@@ -1,3 +1,5 @@
+import { Colors } from "wglt";
+
 import { Appearance, Position } from "../components";
 import { Query } from "../ecs";
 import Game from "../Game";
@@ -10,12 +12,24 @@ export default class DrawScreen {
   }
 
   process() {
-    this.g.term.clear();
+    const { map, term } = this.g;
+
+    for (let y = 0; y < map.height; y++) {
+      for (let x = 0; x < map.width; x++) {
+        const c = term.getCell(x, y);
+        if (c?.explored) {
+          const color = term.isVisible(x, y) ? Colors.WHITE : Colors.DARK_GRAY;
+          term.drawString(x, y, map.get(x, y), color);
+        }
+      }
+    }
+
     this.drawable.get().map((e) => {
       const app = e.get(Appearance);
       const pos = e.get(Position);
 
-      this.g.term.drawChar(pos.x, pos.y, app.symbol, app.colour);
+      if (term.isVisible(pos.x, pos.y))
+        term.drawChar(pos.x, pos.y, app.symbol, app.colour);
     });
   }
 }

@@ -6,7 +6,7 @@ window.addEventListener("load", () => {
   canvas.focus();
 
   const g = new Game(canvas, 80, 60);
+  (window as any).g = g;
 
   g.ecs.entity("orc").add(Position, { x: 2, y: 2 });
-  g.ecs.entity("player").add(Position, { x: 10, y: 10 });
 });

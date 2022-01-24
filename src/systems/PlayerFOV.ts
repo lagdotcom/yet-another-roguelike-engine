@@ -7,7 +7,7 @@ export default class PlayerFOV {
   constructor(public g: Game) {
     this.dirty = true;
 
-    g.ee.on("move", (who) => {
+    g.on("move", (who) => {
       if (who.has(PlayerTag)) this.dirty = true;
     });
   }

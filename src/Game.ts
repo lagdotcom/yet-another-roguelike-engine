@@ -3,18 +3,17 @@ import { Terminal } from "wglt";
 
 import { Position } from "./components";
 import ecs, { Entity, Manager } from "./ecs";
-import Events, { GameEventEmitter } from "./events";
-import Grid from "./Grid";
+import Events from "./events";
+import GameMap from "./GameMap";
 import ISystem from "./ISystem";
 import { loadAllYaml } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
 
-export default class Game {
+export default class Game extends EventEmitter<Events> {
   ecs: Manager;
-  ee: GameEventEmitter;
-  map: Grid<string>;
+  map: GameMap;
   player: Entity;
   systems: ISystem[];
   term: Terminal;
@@ -24,17 +23,14 @@ export default class Game {
     public width: number,
     public height: number
   ) {
+    super();
+
     this.ecs = ecs;
-    this.ee = new EventEmitter<Events>();
     this.term = new Terminal(canvas, width, height);
-    this.map = new Grid(width, height, () => ".");
+    this.map = new GameMap(width, height, () => ".");
     this.load();
 
-    this.systems = [
-      new PlayerMove(this),
-      new PlayerFOV(this),
-      new DrawScreen(this),
-    ];
+    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
     this.term.update = this.update.bind(this);
 
     this.player = ecs.entity("player").add(Position, { x: 5, y: 5 });

@@ -5,7 +5,7 @@ export default class PlayerMove {
   constructor(public g: Game) {}
 
   process() {
-    const { ee, player, term } = this.g;
+    const { player, term } = this.g;
 
     const move = term.getMovementKey();
     if (!move) return;
@@ -19,6 +19,6 @@ export default class PlayerMove {
 
     pos.x = dx;
     pos.y = dy;
-    ee.emit("move", player, [x, y]);
+    this.g.emit("move", player, [x, y]);
   }
 }

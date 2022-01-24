@@ -2,7 +2,7 @@ import EventEmitter from "eventemitter3";
 import { Terminal } from "wglt";
 
 import { Position } from "./components";
-import ecs, { Entity, Manager } from "./ecs";
+import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
 import GameMap from "./GameMap";
 import ISystem from "./ISystem";
@@ -12,6 +12,7 @@ import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
 
 export default class Game extends EventEmitter<Events> {
+  blockers: Query;
   ecs: Manager;
   map: GameMap;
   player: Entity;
@@ -34,6 +35,7 @@ export default class Game extends EventEmitter<Events> {
     this.term.update = this.update.bind(this);
 
     this.player = ecs.entity("player").add(Position, { x: 5, y: 5 });
+    this.blockers = ecs.query({ all: [Position] });
   }
 
   private update() {
@@ -55,5 +57,16 @@ export default class Game extends EventEmitter<Events> {
     this.map.setHLine(0, 10, 7, block);
     this.map.setVLine(0, 0, 7, block);
     this.map.setVLine(10, 0, 7, block);
+  }
+
+  isBlocked(x: number, y: number) {
+    if (this.term.isBlocked(x, y)) return true;
+
+    for (const e of this.blockers.get()) {
+      const pos = e.get(Position);
+      if (pos.x === x && pos.y === y) return true;
+    }
+
+    return false;
   }
 }

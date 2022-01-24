@@ -15,7 +15,7 @@ export default class PlayerMove {
 
     const dx = x + move.x;
     const dy = y + move.y;
-    if (term.isBlocked(dx, dy)) return;
+    if (this.g.isBlocked(dx, dy)) return;
 
     pos.x = dx;
     pos.y = dy;

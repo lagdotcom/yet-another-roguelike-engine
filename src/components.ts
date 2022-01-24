@@ -6,7 +6,7 @@ export interface IAI {
 
 export interface IAppearance {
   colour: number;
-  symbol: number;
+  glyph: number;
 }
 
 export interface IPosition {

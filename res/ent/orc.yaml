@@ -3,10 +3,10 @@ orc:
     aggressiveness: 1
   Appearance:
     colour: DARK_GREEN
-    symbol: o
+    glyph: o
 
 orc.warrior:
   prefabs: [orc]
   Appearance:
     colour: LIGHT_GREEN
-    symbol: o
+    glyph: o

@@ -29,7 +29,7 @@ export default class DrawScreen {
       const pos = e.get(Position);
 
       if (term.isVisible(pos.x, pos.y))
-        term.drawChar(pos.x, pos.y, app.symbol, app.colour);
+        term.drawChar(pos.x, pos.y, app.glyph, app.colour);
     });
   }
 }

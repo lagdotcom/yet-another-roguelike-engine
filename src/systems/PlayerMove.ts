@@ -13,12 +13,10 @@ export default class PlayerMove {
     const pos = player.get(Position);
     const { x, y } = pos;
 
-    const dx = x + move.x;
-    const dy = y + move.y;
-    if (this.g.isBlocked(dx, dy)) return;
+    if (!this.g.canMove(x, y, move.x, move.y)) return;
 
-    pos.x = dx;
-    pos.y = dy;
+    pos.x += move.x;
+    pos.y += move.y;
     this.g.emit("move", player, [x, y]);
   }
 }

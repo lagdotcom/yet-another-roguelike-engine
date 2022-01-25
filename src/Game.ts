@@ -1,6 +1,10 @@
 import EventEmitter from "eventemitter3";
+import { random } from "random-seedable";
+import PRNG from "random-seedable/@types/PRNG";
 import { Terminal } from "wglt";
 
+import { walls } from "./aagStuff";
+import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
 import { Position } from "./components";
 import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
@@ -14,8 +18,9 @@ import PlayerMove from "./systems/PlayerMove";
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
   ecs: Manager;
-  map: GameMap;
+  map!: GameMap;
   player: Entity;
+  rng: PRNG;
   systems: ISystem[];
   term: Terminal;
 
@@ -27,14 +32,15 @@ export default class Game extends EventEmitter<Events> {
     super();
 
     this.ecs = ecs;
+    this.rng = random;
     this.term = new Terminal(canvas, width, height);
-    this.map = new GameMap(width, height, () => ".");
-    this.load();
+    // this.map = new GameMap(width, height, () => ".");
+    const [x, y] = this.load();
 
     this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
     this.term.update = this.update.bind(this);
 
-    this.player = ecs.entity("player").add(Position, { x: 5, y: 5 });
+    this.player = ecs.entity("player").add(Position, { x, y });
     this.blockers = ecs.query({ all: [Position] });
   }
 
@@ -43,20 +49,36 @@ export default class Game extends EventEmitter<Events> {
     this.systems.forEach((sys) => sys.process());
   }
 
-  private load() {
+  private load(): [x: number, y: number] {
     loadAllYaml();
 
-    const block = (x: number, y: number) => {
-      this.term.setBlocked(x, y, true);
-      this.term.setBlockedSight(x, y, true);
+    const aa = new AmorphousAreaGenerator(this, 48);
+    this.map = aa.map;
 
-      return "#";
-    };
+    // TODO scrolling
+    this.map.forEach((cell, x, y) => {
+      if (walls.includes(cell)) {
+        this.term.setBlocked(x, y, true);
+        this.term.setBlockedSight(x, y, true);
+      }
+    });
 
-    this.map.setHLine(0, 10, 0, block);
-    this.map.setHLine(0, 10, 7, block);
-    this.map.setVLine(0, 0, 7, block);
-    this.map.setVLine(10, 0, 7, block);
+    if (aa.player) return aa.player;
+    return [4, 4];
+  }
+
+  choose<T>(items: T[]): T {
+    return this.rng.choice(items);
+  }
+
+  canMove(x: number, y: number, dx: number, dy: number) {
+    if (this.isBlocked(x + dx, y + dy)) return false;
+
+    // prevent moving diagonally if both directions are blocked
+    if (dx && dy && this.isBlocked(x + dx, y) && this.isBlocked(x, y + dy))
+      return false;
+
+    return true;
   }
 
   isBlocked(x: number, y: number) {

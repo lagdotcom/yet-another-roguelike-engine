@@ -30,6 +30,7 @@
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.1",
     "@parcel/transformer-yaml": "^2.0.1",
+    "@types/jest": "^27.4.0",
     "@types/lodash.merge": "^4.6.6",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",

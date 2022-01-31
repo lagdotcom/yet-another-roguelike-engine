@@ -1,11 +1,14 @@
+import {
+  DocumentParser,
+  NumberParser,
+  StringParser,
+  TagParser,
+} from "@lagdotcom/boring-parser";
+
 import { Monster } from "../types";
 import AttackParser from "./AttackParser";
 import AttsParser from "./AttsParser";
-import DocumentParser from "./DocumentParser";
-import NumberParser from "./NumberParser";
 import StatusParser from "./StatusParser";
-import StringParser from "./StringParser";
-import TagParser from "./TagParser";
 
 export default class MonsterParser extends DocumentParser<Monster> {
   constructor() {

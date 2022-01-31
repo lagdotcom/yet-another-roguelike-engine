@@ -1,6 +1,6 @@
+import { int, isNumber, Parser, split } from "@lagdotcom/boring-parser";
+
 import { Atts } from "../types";
-import Parser from "./Parser";
-import { int, isNumber, split } from "./utils";
 
 export default class AttsParser implements Parser<Atts> {
   check(input: string): boolean {

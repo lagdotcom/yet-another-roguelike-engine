@@ -11,6 +11,7 @@ import {
   tilejunk,
   XY,
 } from "./aagStuff";
+import { sqrt } from "./formulae";
 import Game from "./Game";
 import GameMap from "./GameMap";
 import Grid from "./Grid";
@@ -226,11 +227,7 @@ export default class AmorphousAreaGenerator {
     }
     const spawns = Math.min(
       empty.length,
-      Math.floor(
-        Math.sqrt(
-          xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv)
-        )
-      )
+      sqrt(xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv))
     );
     for (let n = 0; n < spawns; n++) {
       const index = this.g.rng.randRange(0, empty.length - 1);

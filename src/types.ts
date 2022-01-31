@@ -17,6 +17,30 @@ export type AttackEffect = DamageEffect | KnockbackEffect | StatusEffect;
 
 export type Atts = [body: number, mind: number, soul: number];
 
+export type Monster = {
+  cat: string;
+  col: string;
+  name: string;
+  desc: string;
+  die?: string;
+  level: number;
+  atts: Atts;
+  wake?: number;
+  idealrange?: number;
+  tags: string[];
+  status: Status[];
+  attack: Attack[];
+};
+
+export type MonsterCategory = {
+  logo: string;
+  name: string;
+  desc: string;
+  tags: string[];
+  status: Status[];
+  attack: Attack[];
+};
+
 export type Status = {
   name: string;
   power: number;

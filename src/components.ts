@@ -14,8 +14,17 @@ export interface IPosition {
   y: number;
 }
 
+export interface IStats {
+  level: number;
+  body: number;
+  mind: number;
+  spirit: number;
+  talent: number;
+}
+
 export const AI = ecs.register<IAI>("AI");
 export const Appearance = ecs.register<IAppearance>("Appearance");
 export const Position = ecs.register<IPosition>("Position");
+export const Stats = ecs.register<IStats>("Stats");
 
 export const PlayerTag = ecs.register<never>("PlayerTag");

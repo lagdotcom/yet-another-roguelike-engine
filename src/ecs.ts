@@ -34,14 +34,14 @@ abstract class BaseEntity {
     this.components = new Set<Component<unknown>>();
 
     this.prefabs = [];
-    prefabs.forEach((pf) => {
+    for (const pf of prefabs) {
       const pfd = pf.data();
       for (const name in pfd) {
         this.add(ecs.getComponent(name), pfd[name]);
       }
 
       this.prefabs.push(pf.id);
-    });
+    }
   }
 
   add<T>(component: Component<T>, data: T) {
@@ -72,9 +72,7 @@ abstract class BaseEntity {
 
   data() {
     const data: { [name: string]: unknown } = {};
-    this.components.forEach((co) => {
-      data[co.name] = co.get(this);
-    });
+    for (const co of this.components) data[co.name] = co.get(this);
 
     return data;
   }
@@ -117,7 +115,7 @@ export class Entity extends BaseEntity {
 
   destroy() {
     if (!this.destroyed) {
-      this.components.forEach((comp) => comp.remove(this));
+      for (const co of this.components) co.remove(this);
 
       this.ecs.remove(this);
       this.destroyed = true;
@@ -194,16 +192,16 @@ export class Manager {
 
   attach(en: Entity): Entity {
     this.entities.set(en.id, en);
-    this.queries.forEach((q) => q.add(en));
+    for (const q of this.queries) q.add(en);
     return en;
   }
 
   update(en: Entity) {
-    this.queries.forEach((q) => q.add(en));
+    for (const q of this.queries) q.add(en);
   }
 
   remove(en: Entity) {
-    this.queries.forEach((q) => q.remove(en));
+    for (const q of this.queries) q.remove(en);
     this.entities.delete(en.id);
   }
 

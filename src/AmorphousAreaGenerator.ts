@@ -6,9 +6,12 @@ import {
   areaWidth,
   dimNames,
   dimSizes,
+  gamut,
   PlanID,
+  tileColours,
   tiledeco,
   tilejunk,
+  walls,
   XY,
 } from "./aagStuff";
 import { sqrt } from "./formulae";
@@ -28,8 +31,9 @@ export default class AmorphousAreaGenerator {
   areaBank: typeof areaBank;
   decor: string[];
   floorplan: Grid<PlanID | "X">;
-  map!: GameMap;
+  map: GameMap;
   player!: XY;
+  tiles!: Grid<string>;
 
   constructor(public g: Game, public floorlv: number) {
     this.decor = times(3, () => g.choose(tiledeco));
@@ -58,6 +62,15 @@ export default class AmorphousAreaGenerator {
 
     this.areaBank = deepcopy(areaBank);
     this.pickrooms();
+
+    this.map = new GameMap(this.tiles.width, this.tiles.height, (x, y) => {
+      const glyph = this.tiles.get(x, y);
+      const opaque = walls.includes(glyph);
+      const blocks = opaque;
+      const name = tileColours[glyph] || "white";
+      const colour = gamut[name];
+      return { glyph, colour, opaque, blocks };
+    });
   }
 
   empty_check(
@@ -188,7 +201,7 @@ export default class AmorphousAreaGenerator {
   pickrooms() {
     let xtw = this.floorplan.width * areaWidth;
     let ytw = this.floorplan.height * areaHeight;
-    this.map = new GameMap(xtw, ytw, () => " ");
+    this.tiles = new Grid(xtw, ytw, () => " ");
 
     // fill it in
     for (let y = 0; y < this.floorplan.height; y++) {
@@ -203,17 +216,17 @@ export default class AmorphousAreaGenerator {
     const joins: XY[] = [];
     for (let y = 0; y < ytw; y++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.map, x, y, "J", ["J"])) joins.push([x, y]);
+        if (this.scan_around(this.tiles, x, y, "J", ["J"])) joins.push([x, y]);
       }
     }
-    for (const [x, y] of joins) this.map.set(x, y, " ");
+    for (const [x, y] of joins) this.tiles.set(x, y, " ");
 
     // wall in
-    this.map = this.map.expand(2, 2, (x, y) => {
+    this.tiles = this.tiles.expand(2, 2, (x, y) => {
       const nx = x - 1;
       const ny = y - 1;
 
-      return this.map.contains(nx, ny) ? this.map.get(nx, ny) : "%";
+      return this.tiles.contains(nx, ny) ? this.tiles.get(nx, ny) : "%";
     });
     xtw += 2;
     ytw += 2;
@@ -222,7 +235,7 @@ export default class AmorphousAreaGenerator {
     const empty: XY[] = [];
     for (let y = 0; y < ytw; y++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.map, x, y, " ", ["#"])) empty.push([x, y]);
+        if (this.scan_around(this.tiles, x, y, " ", ["#"])) empty.push([x, y]);
       }
     }
     const spawns = Math.min(
@@ -237,17 +250,17 @@ export default class AmorphousAreaGenerator {
       if (n === 0) this.player = [x, y];
       else {
         // TODO this should spawn an actor of some type
-        this.map.set(x, y, spz);
+        this.tiles.set(x, y, spz);
       }
     }
 
     // flavour
     for (let y = 0; y < ytw; y++) {
       for (let x = 0; x < xtw; x++) {
-        let ch = this.map.get(x, y);
+        let ch = this.tiles.get(x, y);
         if (ch === "J") ch = this.g.choose(["~", "."]);
-        if (ch === "~") this.map.set(x, y, this.g.choose(this.decor));
-        if (ch === ".") this.map.set(x, y, this.g.choose(tilejunk));
+        if (ch === "~") this.tiles.set(x, y, this.g.choose(this.decor));
+        if (ch === ".") this.tiles.set(x, y, this.g.choose(tilejunk));
       }
     }
   }
@@ -267,6 +280,6 @@ export default class AmorphousAreaGenerator {
     if (this.g.rng.bool()) room = room.flipH();
     if (this.g.rng.bool()) room = room.flipV();
 
-    this.map.paste(x, y, room);
+    this.tiles.paste(x, y, room);
   }
 }

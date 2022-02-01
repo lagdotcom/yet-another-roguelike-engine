@@ -1,5 +1,0 @@
-player:
-  tags: [Player]
-  Appearance:
-    colour: WHITE
-    glyph: "@"

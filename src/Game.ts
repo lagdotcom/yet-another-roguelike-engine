@@ -1,16 +1,14 @@
 import EventEmitter from "eventemitter3";
 import { random } from "random-seedable";
 import PRNG from "random-seedable/@types/PRNG";
-import { Terminal } from "wglt";
+import { Colors, Terminal } from "wglt";
 
-import { walls } from "./aagStuff";
 import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
-import { Position } from "./components";
+import { Appearance, PlayerTag, Position } from "./components";
 import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
 import GameMap from "./GameMap";
 import ISystem from "./ISystem";
-import { loadAllYaml } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
@@ -21,6 +19,8 @@ export default class Game extends EventEmitter<Events> {
   map!: GameMap;
   player: Entity;
   rng: PRNG;
+  scrollX: number;
+  scrollY: number;
   systems: ISystem[];
   term: Terminal;
 
@@ -33,35 +33,30 @@ export default class Game extends EventEmitter<Events> {
 
     this.ecs = ecs;
     this.rng = random;
+    this.scrollX = 0;
+    this.scrollY = 0;
     this.term = new Terminal(canvas, width, height);
-    // this.map = new GameMap(width, height, () => ".");
     const [x, y] = this.load();
 
     this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
     this.term.update = this.update.bind(this);
+
+    ecs
+      .prefab("player")
+      .add(Appearance, { colour: Colors.WHITE, glyph: "@".charCodeAt(0) })
+      .add(PlayerTag, {});
 
     this.player = ecs.entity("player").add(Position, { x, y });
     this.blockers = ecs.query({ all: [Position] });
   }
 
   private update() {
-    this.term.clear();
-    this.systems.forEach((sys) => sys.process());
+    for (const sys of this.systems) sys.process();
   }
 
   private load(): [x: number, y: number] {
-    loadAllYaml();
-
     const aa = new AmorphousAreaGenerator(this, 48);
     this.map = aa.map;
-
-    // TODO scrolling
-    this.map.forEach((cell, x, y) => {
-      if (walls.includes(cell)) {
-        this.term.setBlocked(x, y, true);
-        this.term.setBlockedSight(x, y, true);
-      }
-    });
 
     if (aa.player) return aa.player;
     return [4, 4];
@@ -82,7 +77,7 @@ export default class Game extends EventEmitter<Events> {
   }
 
   isBlocked(x: number, y: number) {
-    if (this.term.isBlocked(x, y)) return true;
+    if (this.map.isBlocked(x, y)) return true;
 
     for (const e of this.blockers.get()) {
       const pos = e.get(Position);

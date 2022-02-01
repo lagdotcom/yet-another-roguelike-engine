@@ -1,3 +1,5 @@
+import { Keys } from "wglt";
+
 import { Position } from "../components";
 import Game from "../Game";
 
@@ -9,6 +11,14 @@ export default class PlayerMove {
 
     const move = term.getMovementKey();
     if (!move) return;
+
+    if (term.isKeyDown(Keys.VK_CONTROL)) {
+      const newX = this.g.scrollX + move.x * 10;
+      const newY = this.g.scrollY + move.y * 10;
+
+      this.g.emit("scroll", [newX, newY]);
+      return;
+    }
 
     const pos = player.get(Position);
     const { x, y } = pos;

@@ -1,0 +1,6 @@
+logo:a
+name: Awfs
+desc: Awfs are tiny humanoids who dwell in the hills surrounding Graydnmuch. Once almost feral, they've since learnt from the humans they scavenge from and have devised their own society, complete with religions and technology.
+die:The awf collapses with a wail.
+drop:JUNK, 85, TECH_CONSUMABLE, 35
+tags: INTELLIGENT, MUNDANE, HUMANOID, CHAOTIC, NEUTRAL

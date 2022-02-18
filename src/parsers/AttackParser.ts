@@ -1,12 +1,7 @@
-import {
-  int,
-  isNumber,
-  isString,
-  Parser,
-  split,
-} from "@lagdotcom/boring-parser";
+import { int, isString, Parser, split } from "@lagdotcom/boring-parser";
 
 import { Attack, AttackEffect } from "../types";
+import { isNumber } from "./tools";
 
 interface AttackEffectParser extends Parser<AttackEffect[]> {
   length: number;
@@ -52,6 +47,20 @@ class DamageParser implements AttackEffectParser {
   }
 }
 
+class DoubleDamageParser implements AttackEffectParser {
+  constructor(public length = 1) {}
+
+  check(input: string): boolean {
+    const [tag, criterion] = split(input, ":");
+    return tag === "DOUBLE_DAMAGE" && isString(criterion);
+  }
+
+  apply(input: string, previous: AttackEffect[]): AttackEffect[] {
+    const [, criterion] = split(input, ":");
+    return previous.concat({ type: "DOUBLE_DAMAGE", criterion });
+  }
+}
+
 class KnockbackParser implements AttackEffectParser {
   constructor(public length = 1) {}
 
@@ -67,6 +76,7 @@ class KnockbackParser implements AttackEffectParser {
 const effectParsers: AttackEffectParser[] = [
   new AddParser(),
   new DamageParser(),
+  new DoubleDamageParser(),
   new KnockbackParser(),
 ];
 

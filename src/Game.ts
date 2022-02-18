@@ -9,14 +9,18 @@ import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
 import GameMap from "./GameMap";
 import ISystem from "./ISystem";
+import { loadAllCategories, loadAllMonsters } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
+import { Monster, MonsterCategory } from "./types";
 
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
+  categories!: MonsterCategory[];
   ecs: Manager;
   map!: GameMap;
+  monsters!: Monster[];
   player: Entity;
   rng: PRNG;
   scrollX: number;
@@ -55,6 +59,9 @@ export default class Game extends EventEmitter<Events> {
   }
 
   private load(): [x: number, y: number] {
+    this.categories = loadAllCategories();
+    this.monsters = loadAllMonsters();
+
     const aa = new AmorphousAreaGenerator(this, 48);
     this.map = aa.map;
 

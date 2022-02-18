@@ -1,0 +1,19 @@
+cat:a
+col:silver
+id:awf_d
+name:desperate awf
+desc:A little guy with a scarred turquoise body. He draws his cloak around himself and mutters.
+level:1
+atts:10, 9, 6
+tags:SINGULAR
+
+cat:a
+col:white
+name:mulnishel
+hname:awfen hermit
+desc:This tiny awf has blindingly-white flesh and an anti-social scowl.
+level:2
+atts:7, 16, 7
+weapon:club_basic
+tags:SINGULAR, CAST_ONCE
+attack:hex, 0, 1, 0, DAMAGE:7, DOUBLE_DAMAGE:LAWFUL

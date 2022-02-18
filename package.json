@@ -29,10 +29,12 @@
   },
   "devDependencies": {
     "@parcel/resolver-glob": "^2.0.1",
+    "@parcel/transformer-inline-string": "^2.3.2",
     "@types/jest": "^27.4.0",
     "@types/lodash.merge": "^4.6.6",
     "@typescript-eslint/eslint-plugin": "^5.7.0",
     "@typescript-eslint/parser": "^5.7.0",
+    "buffer": "^6.0.3",
     "eslint": "^8.4.1",
     "jest": "^27.4.5",
     "ts-jest": "^27.1.1",

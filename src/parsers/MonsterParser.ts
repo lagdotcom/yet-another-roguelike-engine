@@ -1,6 +1,6 @@
 import {
   DocumentParser,
-  NumberParser,
+  IntParser,
   StringParser,
   TagParser,
 } from "@lagdotcom/boring-parser";
@@ -13,18 +13,21 @@ import StatusParser from "./StatusParser";
 export default class MonsterParser extends DocumentParser<Monster> {
   constructor() {
     super({
+      id: new StringParser(),
       cat: new StringParser(),
       col: new StringParser(),
       name: new StringParser(),
+      hname: new StringParser(),
       desc: new StringParser(),
       die: new StringParser(),
-      level: new NumberParser(),
+      level: new IntParser(),
       atts: new AttsParser(),
-      wake: new NumberParser(),
-      idealrange: new NumberParser(),
+      wake: new IntParser(),
+      idealrange: new IntParser(),
       tags: new TagParser(),
       status: new StatusParser(),
       attack: new AttackParser(),
+      weapon: new StringParser(),
     });
   }
 

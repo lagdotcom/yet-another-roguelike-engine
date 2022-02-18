@@ -14,6 +14,7 @@ import {
   walls,
   XY,
 } from "./aagStuff";
+import { Appearance, Position, Stats } from "./components";
 import { sqrt } from "./formulae";
 import Game from "./Game";
 import GameMap from "./GameMap";
@@ -248,10 +249,7 @@ export default class AmorphousAreaGenerator {
       empty.splice(index, 1);
       const spz = this.g.choose(["®", "®", "®", "®", "®", "Ø", "Ø", "²"]);
       if (n === 0) this.player = [x, y];
-      else {
-        // TODO this should spawn an actor of some type
-        this.tiles.set(x, y, spz);
-      }
+      else this.spawnMonster(x, y);
     }
 
     // flavour
@@ -281,5 +279,21 @@ export default class AmorphousAreaGenerator {
     if (this.g.rng.bool()) room = room.flipV();
 
     this.tiles.paste(x, y, room);
+  }
+
+  spawnMonster(x: number, y: number) {
+    const monster = this.g.choose(this.g.monsters);
+    const category = this.g.categories.find((cat) => cat.logo === monster.cat);
+    const colour = gamut[monster.col] || gamut.white;
+    const { level } = monster;
+    const [body, mind, spirit] = monster.atts;
+
+    const e = this.g.ecs.entity();
+    e.add(Position, { x, y });
+    e.add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) });
+    e.add(Stats, { level, body, mind, spirit, talent: 0 });
+
+    console.log("spawn", { monster, category, x, y });
+    return e;
   }
 }

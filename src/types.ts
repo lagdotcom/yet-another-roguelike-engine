@@ -55,3 +55,5 @@ export type Status = {
   name: string;
   power: number;
 };
+
+export type Palette = Record<string, number>;

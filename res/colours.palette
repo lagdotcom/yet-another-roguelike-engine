@@ -1,0 +1,22 @@
+black: 0, 0, 0
+charcoal: 55, 55, 55
+silver: 135, 135, 135
+white: 255, 255, 255
+red: 255, 25, 25
+silver brown: 199, 199, 103
+silver purp: 207, 111, 199
+silver cyan: 111, 199, 199
+silver green: 111, 207, 87
+silver blue: 111, 111, 207
+dgreen: 0, 207, 0
+green: 39, 255, 39
+dblue: 7, 7, 255
+blue: 55, 55, 255
+dcyan: 39, 151, 151
+cyan: 71, 255, 255
+dpurp: 151, 39, 151
+purp: 255, 71, 255
+dyel: 151, 151, 39
+yel: 255, 255, 71
+dora: 191, 111, 11
+ora: 255, 205, 21

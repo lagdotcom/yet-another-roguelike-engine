@@ -1,9 +1,12 @@
+import * as categoryFiles from "bundle-text:../res/*.category";
+import * as monsterFiles from "bundle-text:../res/*.monster";
+import paletteData from "bundle-text:../res/colours.palette";
+
 import { DocumentParser } from "@lagdotcom/boring-parser";
 
-import * as categoryFiles from "../res/*.category";
-import * as monsterFiles from "../res/*.monster";
 import MonsterCategoryParser from "./parsers/MonsterCategoryParser";
 import MonsterParser from "./parsers/MonsterParser";
+import PaletteParser from "./parsers/PaletteParser";
 
 function loadAll<T>(
   parser: DocumentParser<T>,
@@ -31,4 +34,9 @@ export function loadAllCategories() {
 
 export function loadAllMonsters() {
   return loadAll(new MonsterParser(), monsterFiles, "Loading monsters:");
+}
+
+export function loadPalette() {
+  const p = new PaletteParser();
+  return p.apply(paletteData, {});
 }

@@ -9,11 +9,11 @@ import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
 import GameMap from "./GameMap";
 import ISystem from "./ISystem";
-import { loadAllCategories, loadAllMonsters } from "./resources";
+import { loadAllCategories, loadAllMonsters, loadPalette } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
-import { Monster, MonsterCategory } from "./types";
+import { Monster, MonsterCategory, Palette } from "./types";
 
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
@@ -21,6 +21,7 @@ export default class Game extends EventEmitter<Events> {
   ecs: Manager;
   map!: GameMap;
   monsters!: Monster[];
+  palette!: Palette;
   player: Entity;
   rng: PRNG;
   scrollX: number;
@@ -61,6 +62,7 @@ export default class Game extends EventEmitter<Events> {
   private load(): [x: number, y: number] {
     this.categories = loadAllCategories();
     this.monsters = loadAllMonsters();
+    this.palette = loadPalette();
 
     const aa = new AmorphousAreaGenerator(this, 48);
     this.map = aa.map;

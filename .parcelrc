@@ -3,13 +3,5 @@
   "resolvers": [
     "@parcel/resolver-glob",
     "..."
-  ],
-  "transformers": {
-    "*.category": [
-      "@parcel/transformer-inline-string"
-    ],
-    "*.monster": [
-      "@parcel/transformer-inline-string"
-    ]
-  }
+  ]
 }

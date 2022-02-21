@@ -1,12 +1,7 @@
-import {
-  int,
-  isNumber,
-  isString,
-  Parser,
-  split,
-} from "@lagdotcom/boring-parser";
+import { int, isString, Parser, split } from "@lagdotcom/boring-parser";
 
 import { Status } from "../types";
+import { isNumber } from "./tools";
 
 export default class StatusParser implements Parser<Status[]> {
   check(input: string): boolean {

@@ -6,7 +6,6 @@ import {
   areaWidth,
   dimNames,
   dimSizes,
-  gamut,
   PlanID,
   tileColours,
   tiledeco,
@@ -69,7 +68,7 @@ export default class AmorphousAreaGenerator {
       const opaque = walls.includes(glyph);
       const blocks = opaque;
       const name = tileColours[glyph] || "white";
-      const colour = gamut[name];
+      const colour = g.palette[name];
       return { glyph, colour, opaque, blocks };
     });
   }
@@ -247,7 +246,7 @@ export default class AmorphousAreaGenerator {
       const index = this.g.rng.randRange(0, empty.length - 1);
       const [x, y] = empty[index];
       empty.splice(index, 1);
-      const spz = this.g.choose(["®", "®", "®", "®", "®", "Ø", "Ø", "²"]);
+      // const spz = this.g.choose(["®", "®", "®", "®", "®", "Ø", "Ø", "²"]);
       if (n === 0) this.player = [x, y];
       else this.spawnMonster(x, y);
     }
@@ -282,16 +281,19 @@ export default class AmorphousAreaGenerator {
   }
 
   spawnMonster(x: number, y: number) {
-    const monster = this.g.choose(this.g.monsters);
-    const category = this.g.categories.find((cat) => cat.logo === monster.cat);
-    const colour = gamut[monster.col] || gamut.white;
+    const { categories, ecs, monsters, palette } = this.g;
+
+    const monster = this.g.choose(monsters);
+    const category = categories.find((cat) => cat.logo === monster.cat);
+    const colour = palette[monster.col] || palette.white;
     const { level } = monster;
     const [body, mind, spirit] = monster.atts;
 
-    const e = this.g.ecs.entity();
-    e.add(Position, { x, y });
-    e.add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) });
-    e.add(Stats, { level, body, mind, spirit, talent: 0 });
+    const e = ecs
+      .entity()
+      .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
+      .add(Position, { x, y })
+      .add(Stats, { level, body, mind, spirit, talent: 0 });
 
     console.log("spawn", { monster, category, x, y });
     return e;

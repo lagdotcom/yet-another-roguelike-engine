@@ -72,7 +72,7 @@ export default class Grid<T> {
     return new Grid<T>(this.width, this.height, (x, y) => this.get(x, h - y));
   }
 
-  print(fn: (cell: T, x: number, y: number) => string) {
+  toString(fn: (cell: T, x: number, y: number) => string) {
     let grid = "";
     for (let y = 0; y < this.height; y++) {
       for (let x = 0; x < this.width; x++) {
@@ -81,7 +81,7 @@ export default class Grid<T> {
       grid += "\n";
     }
 
-    console.log(grid);
+    return grid;
   }
 
   forEach(fn: (cell: T, x: number, y: number) => void) {

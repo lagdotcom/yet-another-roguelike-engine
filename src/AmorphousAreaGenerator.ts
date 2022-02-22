@@ -1,3 +1,4 @@
+import debug, { Debugger } from "debug";
 import deepcopy from "deepcopy";
 
 import {
@@ -29,6 +30,7 @@ const times = <T>(count: number, fn: (n: number) => T): T[] => {
 
 export default class AmorphousAreaGenerator {
   areaBank: typeof areaBank;
+  debug: Debugger;
   decor: string[];
   floorplan: Grid<PlanID | "X">;
   map: GameMap;
@@ -36,6 +38,7 @@ export default class AmorphousAreaGenerator {
   tiles!: Grid<string>;
 
   constructor(public g: Game, public floorlv: number) {
+    this.debug = debug("aag");
     this.decor = times(3, () => g.choose(tiledeco));
     this.floorplan = new Grid(5, 5, () => "V");
 
@@ -191,11 +194,15 @@ export default class AmorphousAreaGenerator {
   }
 
   simpleplan() {
-    this.floorplan.print((ch) => {
-      if (ch === "V") return " ";
-      if (ch === "W") return "_";
-      return "#";
-    });
+    this.debug(
+      "simple plan",
+      "\n" +
+        this.floorplan.toString((ch) => {
+          if (ch === "V") return " ";
+          if (ch === "W") return "_";
+          return "#";
+        })
+    );
   }
 
   pickrooms() {
@@ -295,7 +302,7 @@ export default class AmorphousAreaGenerator {
       .add(Position, { x, y })
       .add(Stats, { level, body, mind, spirit, talent: 0 });
 
-    console.log("spawn", { monster, category, x, y });
+    this.debug("spawn %d,%d %s (%s)", x, y, monster.name, category?.name);
     return e;
   }
 }

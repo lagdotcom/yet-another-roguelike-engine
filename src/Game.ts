@@ -4,9 +4,15 @@ import { random, XORShift64 } from "random-seedable";
 import { Colors, GUI, MessageDialog, Terminal } from "wglt";
 
 import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
-import { Appearance, PlayerTag, Position } from "./components";
+import { Appearance, IStats, PlayerTag, Position, Stats } from "./components";
 import ecs, { Entity, Manager, Query } from "./ecs";
 import Events from "./events";
+import {
+  getAllTheStats,
+  getMaxHP,
+  getMaxMana,
+  getMaxStamina,
+} from "./formulae";
 import GameMap from "./GameMap";
 import ISystem from "./ISystem";
 import { loadAllCategories, loadAllMonsters, loadPalette } from "./resources";
@@ -50,7 +56,9 @@ export default class Game extends EventEmitter<Events> {
     ecs
       .prefab("player")
       .add(Appearance, { colour: Colors.WHITE, glyph: "@".charCodeAt(0) })
+      .add(Stats, this.getPlayerStats(3, 3, 3, 1))
       .add(PlayerTag, {});
+    this.player = ecs.entity("player");
 
     this.rng = random;
     this.debug("seed", this.rng.seed);
@@ -60,9 +68,11 @@ export default class Game extends EventEmitter<Events> {
     this.term = new Terminal(canvas, width, height);
     this.gui = new GUI(this.term);
 
+    this.installCheats();
+
     try {
       const [x, y] = this.load();
-      this.player = ecs.entity("player").add(Position, { x, y });
+      this.player.add(Position, { x, y });
     } catch (e) {
       this.fatal(e);
       return;
@@ -88,6 +98,19 @@ export default class Game extends EventEmitter<Events> {
 
     if (aa.player) return aa.player;
     return [4, 4];
+  }
+
+  private installCheats() {
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    const glob = window as any;
+
+    glob.stats = (name: string) => {
+      const monster = this.monsters.find((m) => m.name === name);
+      if (!monster) return "unknown";
+
+      const stats = this.getMonsterStats(monster);
+      return getAllTheStats(stats, this.player.get(Stats));
+    };
   }
 
   fatal(e: unknown) {
@@ -122,5 +145,69 @@ export default class Game extends EventEmitter<Events> {
     }
 
     return false;
+  }
+
+  spawnRandomMonster(x: number, y: number, level: number) {
+    const monster = this.choose(this.monsters);
+    return this.spawnMonster(x, y, monster);
+  }
+
+  spawnMonster(x: number, y: number, monster: Monster) {
+    const { categories, ecs, palette } = this;
+
+    const category = categories.find((cat) => cat.logo === monster.cat);
+    const colour = palette[monster.col] || palette.white;
+
+    const e = ecs
+      .entity()
+      .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
+      .add(Position, { x, y })
+      .add(Stats, this.getMonsterStats(monster));
+
+    this.debug("spawn %d,%d %s (%s)", x, y, monster.name, category?.name);
+    return e;
+  }
+
+  getMonsterStats(monster: Monster): IStats {
+    const { level } = monster;
+    const [body, mind, spirit] = monster.atts;
+    const stats: IStats = {
+      level,
+      body,
+      mind,
+      spirit,
+      talent: 0,
+      hp: 0,
+      mana: 0,
+      stamina: 0,
+    };
+
+    stats.hp = getMaxHP(stats);
+    stats.mana = getMaxMana(stats);
+    stats.stamina = getMaxStamina(stats);
+    return stats;
+  }
+
+  getPlayerStats(
+    mind: number,
+    body: number,
+    spirit: number,
+    talent: number
+  ): IStats {
+    const stats: IStats = {
+      level: 1,
+      mind: mind * 10,
+      body: body * 10,
+      spirit: spirit * 10,
+      talent,
+      hp: 0,
+      mana: 0,
+      stamina: 0,
+    };
+
+    stats.hp = getMaxHP(stats);
+    stats.mana = getMaxMana(stats);
+    stats.stamina = getMaxStamina(stats);
+    return stats;
   }
 }

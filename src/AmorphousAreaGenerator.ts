@@ -255,7 +255,7 @@ export default class AmorphousAreaGenerator {
       empty.splice(index, 1);
       // const spz = this.g.choose(["®", "®", "®", "®", "®", "Ø", "Ø", "²"]);
       if (n === 0) this.player = [x, y];
-      else this.spawnMonster(x, y);
+      else this.g.spawnRandomMonster(x, y, this.floorlv);
     }
 
     // flavour
@@ -285,24 +285,5 @@ export default class AmorphousAreaGenerator {
     if (this.g.rng.bool()) room = room.flipV();
 
     this.tiles.paste(x, y, room);
-  }
-
-  spawnMonster(x: number, y: number) {
-    const { categories, ecs, monsters, palette } = this.g;
-
-    const monster = this.g.choose(monsters);
-    const category = categories.find((cat) => cat.logo === monster.cat);
-    const colour = palette[monster.col] || palette.white;
-    const { level } = monster;
-    const [body, mind, spirit] = monster.atts;
-
-    const e = ecs
-      .entity()
-      .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
-      .add(Position, { x, y })
-      .add(Stats, { level, body, mind, spirit, talent: 0 });
-
-    this.debug("spawn %d,%d %s (%s)", x, y, monster.name, category?.name);
-    return e;
   }
 }

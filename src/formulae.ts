@@ -27,25 +27,6 @@ export function getStaminaRegenAmount(stats: IStats) {
   return Math.max(1, sqrt(getMaxStamina(stats)));
 }
 
-/*
-
-max mana: mind + your eq/status max mp mods
-chance to regen mana per move:
-rng 256 < square root of (mind+level) + your eq/status mp regen chance mods
-amount of mp to regen: square root of max mana or 1
-
-to hit:
-rng 256 < 224 + attack's acc modifier + attacker's eq/status acc mods
-              - opponent's eq/status def mods
-              - opponent's spirit
-
-to damage:
-weapon's base damage +
-rng attack's damage + square root of body + attacker's eq/status dam mods
-                    - opponent's eq/status dam reduction mods
-
-*/
-
 export function getMaxMana(stats: IStats) {
   return stats.mind;
 }
@@ -86,4 +67,20 @@ export function getHitDamage(attacker: IStats, target: IStats) {
   const reduction = 0;
 
   return weapon + damage + sqrt(attacker.body) - reduction;
+}
+
+export function getAllTheStats(me: IStats, them: IStats) {
+  return {
+    MaxHP: getMaxHP(me),
+    HPRegenChance: getHPRegenChance(me),
+    HPRegenAmount: getHPRegenAmount(me),
+    MaxStamina: getMaxStamina(me),
+    StaminaRegenChance: getStaminaRegenChance(me),
+    StaminaRegenAmount: getStaminaRegenAmount(me),
+    MaxMana: getMaxMana(me),
+    ManaRegenChance: getManaRegenChance(me),
+    ManaRegenAmount: getManaRegenAmount(me),
+    HitChance: getHitChance(me, them),
+    HitDamage: getHitDamage(me, them),
+  };
 }

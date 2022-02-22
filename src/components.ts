@@ -20,6 +20,9 @@ export interface IStats {
   mind: number;
   spirit: number;
   talent: number;
+  hp: number;
+  mana: number;
+  stamina: number;
 }
 
 export const AI = ecs.register<IAI>("AI");

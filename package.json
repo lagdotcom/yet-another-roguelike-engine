@@ -7,7 +7,7 @@
   "targets": {
     "default": {
       "distDir": "./docs",
-      "publicUrl": "yet-another-roguelike-engine/"
+      "publicUrl": "/yet-another-roguelike-engine/"
     }
   },
   "scripts": {

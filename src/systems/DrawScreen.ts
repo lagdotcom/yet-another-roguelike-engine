@@ -1,8 +1,8 @@
 import { fromRgb } from "wglt";
 
 import { Appearance, Position } from "../components";
-import { Query } from "../ecs";
-import Game from "../Game";
+import type { Query } from "../ecs";
+import type Game from "../Game";
 
 const darken = (c: number, mul = 0.25) => {
   const b = (c >> 8) & 255;

@@ -49,25 +49,25 @@ describe("category parser", () => {
 
   it("complains about a missing colon", () => {
     expect(() => p.parse("name forgot my colon!")).toThrow(
-      "(line 1) missing colon"
+      "(line 1) missing colon",
     );
   });
 
   it("complains about a bad field", () => {
     expect(() => p.parse("virus:very yes")).toThrow(
-      "(line 1) invalid field: virus"
+      "(line 1) invalid field: virus",
     );
   });
 
   it("complains about a bad value", () => {
     expect(() => p.parse("status:yes")).toThrow(
-      "(line 1) invalid value for status: yes"
+      "(line 1) invalid value for status: yes",
     );
   });
 
   it("complains about a bad attack effect", () => {
     expect(() => p.parse("attack:something, 0, 0, 0, CHEESE")).toThrow(
-      "(line 1) unknown attack effect: CHEESE"
+      "(line 1) unknown attack effect: CHEESE",
     );
   });
 });

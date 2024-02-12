@@ -4,7 +4,7 @@ export default class Grid<T> {
   constructor(
     public width: number,
     public height: number,
-    fn: (x: number, y: number) => T
+    fn: (x: number, y: number) => T,
   ) {
     const rows: T[][] = [];
 

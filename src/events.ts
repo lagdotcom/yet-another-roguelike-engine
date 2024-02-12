@@ -1,9 +1,8 @@
-import { Entity } from "./ecs";
+import type { Entity } from "./ecs";
 
 export type XY = [x: number, y: number];
 
-type Events = {
+export default interface Events {
   move: (who: Entity, from: XY) => void;
   scroll: (to: XY) => void;
-};
-export default Events;
+}

@@ -4,7 +4,7 @@ import {
   TagParser,
 } from "@lagdotcom/boring-parser";
 
-import { MonsterCategory } from "../types";
+import type { MonsterCategory } from "../types";
 import AttackParser from "./AttackParser";
 import DropParser from "./DropParser";
 import StatusParser from "./StatusParser";

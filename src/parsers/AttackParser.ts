@@ -1,6 +1,6 @@
-import { int, isString, Parser, split } from "@lagdotcom/boring-parser";
+import { int, isString, type Parser, split } from "@lagdotcom/boring-parser";
 
-import { Attack, AttackEffect } from "../types";
+import type { Attack, AttackEffect } from "../types";
 import { isNumber } from "./tools";
 
 interface AttackEffectParser extends Parser<AttackEffect[]> {

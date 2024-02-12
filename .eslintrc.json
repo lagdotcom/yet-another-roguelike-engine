@@ -3,17 +3,32 @@
     "browser": true,
     "es2021": true
   },
-  "extends": ["eslint:recommended", "plugin:@typescript-eslint/recommended"],
   "parser": "@typescript-eslint/parser",
   "parserOptions": {
     "ecmaVersion": 2016,
     "sourceType": "module"
   },
-  "plugins": ["@typescript-eslint"],
+  "plugins": [
+    "@typescript-eslint",
+    "prettier",
+    "promise",
+    "simple-import-sort"
+  ],
+  "extends": [
+    "eslint:recommended",
+    "plugin:@typescript-eslint/recommended",
+    "plugin:@typescript-eslint/stylistic",
+    "plugin:prettier/recommended",
+    "plugin:promise/recommended",
+    "plugin:sonarjs/recommended"
+  ],
   "rules": {
-    "indent": ["error", 2],
-    "linebreak-style": ["error", "windows"],
-    "quotes": ["error", "double"],
-    "@typescript-eslint/semi": ["error", "always"]
+    "arrow-body-style": ["error", "as-needed"],
+    "no-duplicate-imports": ["error"],
+    "object-shorthand": ["error", "always"],
+    "prettier/prettier": ["error", { "endOfLine": "crlf" }],
+    "simple-import-sort/imports": "error",
+    "simple-import-sort/exports": "error",
+    "sonarjs/no-duplicate-string": ["off"]
   }
 }

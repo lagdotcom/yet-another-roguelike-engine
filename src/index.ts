@@ -5,5 +5,5 @@ window.addEventListener("load", () => {
   canvas.focus();
 
   const g = new Game(canvas, 80, 60);
-  (window as any).g = g;
+  window.g = g;
 });

@@ -1,25 +1,31 @@
-import debug, { Debugger } from "debug";
+import debug, { type Debugger } from "debug";
 import EventEmitter from "eventemitter3";
-import { random, XORShift64 } from "random-seedable";
+import { random, type XORShift64 } from "random-seedable";
 import { Colors, GUI, MessageDialog, Terminal } from "wglt";
 
 import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
-import { Appearance, IStats, PlayerTag, Position, Stats } from "./components";
-import ecs, { Entity, Manager, Query } from "./ecs";
-import Events from "./events";
+import {
+  Appearance,
+  type IStats,
+  PlayerTag,
+  Position,
+  Stats,
+} from "./components";
+import ecs, { type Entity, type Manager, type Query } from "./ecs";
+import type Events from "./events";
 import {
   getAllTheStats,
   getMaxHP,
   getMaxMana,
   getMaxStamina,
 } from "./formulae";
-import GameMap from "./GameMap";
-import ISystem from "./ISystem";
+import type GameMap from "./GameMap";
+import type ISystem from "./ISystem";
 import { loadAllCategories, loadAllMonsters, loadPalette } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
-import { Monster, MonsterCategory, Palette } from "./types";
+import type { Monster, MonsterCategory, Palette } from "./types";
 
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
@@ -40,7 +46,7 @@ export default class Game extends EventEmitter<Events> {
   constructor(
     canvas: HTMLCanvasElement,
     public width: number,
-    public height: number
+    public height: number,
   ) {
     super();
 
@@ -130,10 +136,12 @@ export default class Game extends EventEmitter<Events> {
     if (this.isBlocked(x + dx, y + dy)) return false;
 
     // prevent moving diagonally if both directions are blocked
-    if (dx && dy && this.isBlocked(x + dx, y) && this.isBlocked(x, y + dy))
-      return false;
-
-    return true;
+    return !(
+      dx &&
+      dy &&
+      this.isBlocked(x + dx, y) &&
+      this.isBlocked(x, y + dy)
+    );
   }
 
   isBlocked(x: number, y: number) {
@@ -147,6 +155,7 @@ export default class Game extends EventEmitter<Events> {
     return false;
   }
 
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars
   spawnRandomMonster(x: number, y: number, level: number) {
     const monster = this.choose(this.monsters);
     return this.spawnMonster(x, y, monster);
@@ -192,7 +201,7 @@ export default class Game extends EventEmitter<Events> {
     mind: number,
     body: number,
     spirit: number,
-    talent: number
+    talent: number,
   ): IStats {
     const stats: IStats = {
       level: 1,

@@ -1,7 +1,7 @@
-import { Cell } from "wglt";
+import type { Cell } from "wglt";
 
 import { PlayerTag, Position } from "../components";
-import Game from "../Game";
+import type Game from "../Game";
 import { outOfBounds } from "../Tile";
 
 export default class PlayerFOV {

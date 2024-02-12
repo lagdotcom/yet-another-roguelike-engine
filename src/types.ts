@@ -1,14 +1,22 @@
-export type Attack = {
+export interface Attack {
   name: string;
   hp: number;
   sp: number;
   mp: number;
   effects: AttackEffect[];
-};
+}
 
-export type DamageEffect = { type: "DAMAGE"; amount: number };
-export type DoubleDamageEffect = { type: "DOUBLE_DAMAGE"; criterion: string };
-export type KnockbackEffect = { type: "KNOCKBACK" };
+export interface DamageEffect {
+  type: "DAMAGE";
+  amount: number;
+}
+export interface DoubleDamageEffect {
+  type: "DOUBLE_DAMAGE";
+  criterion: string;
+}
+export interface KnockbackEffect {
+  type: "KNOCKBACK";
+}
 export type StatusEffect = {
   type: "ADD";
   save: string;
@@ -22,7 +30,7 @@ export type AttackEffect =
 
 export type Atts = [body: number, mind: number, soul: number];
 
-export type Monster = {
+export interface Monster {
   cat: string;
   col: string;
   id?: string;
@@ -38,9 +46,9 @@ export type Monster = {
   status: Status[];
   weapon?: string;
   attack: Attack[];
-};
+}
 
-export type MonsterCategory = {
+export interface MonsterCategory {
   logo: string;
   name: string;
   desc: string;
@@ -49,11 +57,11 @@ export type MonsterCategory = {
   tags: string[];
   status: Status[];
   attack: Attack[];
-};
+}
 
-export type Status = {
+export interface Status {
   name: string;
   power: number;
-};
+}
 
 export type Palette = Record<string, number>;

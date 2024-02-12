@@ -3,7 +3,7 @@ import merge from "lodash.merge";
 import { nanoid } from "nanoid/non-secure";
 
 export class Component<T> {
-  private data: { [id: string]: T };
+  private data: Record<string, T>;
 
   constructor(public name: string) {
     this.data = {};
@@ -49,6 +49,7 @@ abstract class BaseEntity {
     component.add(this, merge({}, data));
 
     // TODO: debugging only
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     (this as any)[component.name] = component.get(this);
 
     return this;
@@ -67,11 +68,12 @@ abstract class BaseEntity {
     component.remove(this);
 
     // TODO: debugging only
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
     delete (this as any)[component.name];
   }
 
   data() {
-    const data: { [name: string]: unknown } = {};
+    const data: Record<string, unknown> = {};
     for (const co of this.components) data[co.name] = co.get(this);
 
     return data;
@@ -88,7 +90,7 @@ abstract class BaseEntity {
   prefabData() {
     return merge(
       {},
-      ...this.prefabs.map((name) => this.ecs.getPrefab(name).data())
+      ...this.prefabs.map((name) => this.ecs.getPrefab(name).data()),
     );
   }
 }
@@ -126,10 +128,10 @@ export class Entity extends BaseEntity {
 export class Prefab extends BaseEntity {}
 
 export class Manager {
-  private components: { [name: string]: Component<unknown> };
+  private components: Record<string, Component<unknown>>;
   private entities: Map<string, Entity>;
   private idGenerator: () => string;
-  private prefabs: { [name: string]: Prefab };
+  private prefabs: Record<string, Prefab>;
   private queries: Query[];
 
   constructor() {
@@ -172,7 +174,7 @@ export class Manager {
     const en = new Entity(
       this,
       id,
-      ...prefabs.map((name) => this.getPrefab(name))
+      ...prefabs.map((name) => this.getPrefab(name)),
     );
     return this.attach(en);
   }
@@ -215,7 +217,7 @@ export class Manager {
       any?: readonly Component<unknown>[];
       none?: readonly Component<unknown>[];
     } = {},
-    save = true
+    save = true,
   ) {
     const matchAll = all
       ? (en: Entity) => all.every((comp) => en.has(comp))
@@ -231,7 +233,7 @@ export class Manager {
 
     const query = new Query(
       Array.from(this.entities.values()),
-      (en) => matchAny(en) && matchAll(en) && matchNone(en)
+      (en) => matchAny(en) && matchAll(en) && matchNone(en),
     );
 
     if (save) this.queries.push(query);
@@ -243,7 +245,7 @@ export class Manager {
       all?: readonly Component<unknown>[];
       any?: readonly Component<unknown>[];
       none?: readonly Component<unknown>[];
-    } = {}
+    } = {},
   ) {
     return this.query(options, false).get();
   }
@@ -254,7 +256,7 @@ export class Query {
 
   constructor(
     initial: readonly Entity[],
-    public match: (en: Entity) => boolean
+    public match: (en: Entity) => boolean,
   ) {
     this.entities = new Set(initial.filter(match));
   }
@@ -277,4 +279,4 @@ const ecs = new Manager();
 export default ecs;
 
 // TODO: debugging only
-(window as any).ecs = ecs;
+window.ecs = ecs;

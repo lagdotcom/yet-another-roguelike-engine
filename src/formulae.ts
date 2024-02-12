@@ -1,4 +1,4 @@
-import { IStats } from "./components";
+import type { IStats } from "./components";
 
 export function sqrt(n: number) {
   return Math.floor(Math.sqrt(n));
@@ -54,6 +54,7 @@ export function getHitChance(attacker: IStats, target: IStats) {
   return 224 + accuracy - defence - target.spirit;
 }
 
+// eslint-disable-next-line @typescript-eslint/no-unused-vars
 export function getHitDamage(attacker: IStats, target: IStats) {
   /*
   weapon's base damage +

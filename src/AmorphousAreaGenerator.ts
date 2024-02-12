@@ -1,4 +1,4 @@
-import debug, { Debugger } from "debug";
+import debug, { type Debugger } from "debug";
 import deepcopy from "deepcopy";
 
 import {
@@ -7,16 +7,15 @@ import {
   areaWidth,
   dimNames,
   dimSizes,
-  PlanID,
+  type PlanID,
   tileColours,
   tiledeco,
   tilejunk,
   walls,
-  XY,
 } from "./aagStuff";
-import { Appearance, Position, Stats } from "./components";
+import type { XY } from "./events";
 import { sqrt } from "./formulae";
-import Game from "./Game";
+import type Game from "./Game";
 import GameMap from "./GameMap";
 import Grid from "./Grid";
 
@@ -37,7 +36,10 @@ export default class AmorphousAreaGenerator {
   player!: XY;
   tiles!: Grid<string>;
 
-  constructor(public g: Game, public floorlv: number) {
+  constructor(
+    public g: Game,
+    public floorlv: number,
+  ) {
     this.debug = debug("aag");
     this.decor = times(3, () => g.choose(tiledeco));
     this.floorplan = new Grid(5, 5, () => "V");
@@ -82,7 +84,7 @@ export default class AmorphousAreaGenerator {
     xw: number,
     yw: number,
     rc: PlanID,
-    draw = false
+    draw = false,
   ) {
     let out = true;
     const points: XY[] = [];
@@ -139,19 +141,19 @@ export default class AmorphousAreaGenerator {
 
     if (expandUp)
       this.floorplan = this.floorplan.expand(0, 1, (x, y) =>
-        y === 0 ? "V" : this.floorplan.get(x, y - 1)
+        y === 0 ? "V" : this.floorplan.get(x, y - 1),
       );
     if (expandDown)
       this.floorplan = this.floorplan.expand(0, 1, (x, y) =>
-        y === height ? "V" : this.floorplan.get(x, y)
+        y === height ? "V" : this.floorplan.get(x, y),
       );
     if (expandLeft)
       this.floorplan.expand(1, 0, (x, y) =>
-        x === 0 ? "V" : this.floorplan.get(x - 1, y)
+        x === 0 ? "V" : this.floorplan.get(x - 1, y),
       );
     if (expandRight)
       this.floorplan.expand(1, 0, (x, y) =>
-        x === width ? "V" : this.floorplan.get(x, y)
+        x === width ? "V" : this.floorplan.get(x, y),
       );
   }
 
@@ -201,7 +203,7 @@ export default class AmorphousAreaGenerator {
           if (ch === "V") return " ";
           if (ch === "W") return "_";
           return "#";
-        })
+        }),
     );
   }
 
@@ -247,7 +249,7 @@ export default class AmorphousAreaGenerator {
     }
     const spawns = Math.min(
       empty.length,
-      sqrt(xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv))
+      sqrt(xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv)),
     );
     for (let n = 0; n < spawns; n++) {
       const index = this.g.rng.randRange(0, empty.length - 1);
@@ -278,7 +280,7 @@ export default class AmorphousAreaGenerator {
     let room = new Grid(
       blueprint[0].length,
       blueprint.length,
-      (x, y) => blueprint[y][x]
+      (x, y) => blueprint[y][x],
     );
 
     if (this.g.rng.bool()) room = room.flipH();

@@ -1,6 +1,6 @@
-import { int, Parser, split } from "@lagdotcom/boring-parser";
+import { int, type Parser, split } from "@lagdotcom/boring-parser";
 
-import { Atts } from "../types";
+import type { Atts } from "../types";
 import { isNumber } from "./tools";
 
 export default class AttsParser implements Parser<Atts> {

@@ -1,5 +1,5 @@
 import Grid from "./Grid";
-import Tile from "./Tile";
+import type Tile from "./Tile";
 
 export default class GameMap extends Grid<Tile> {
   isBlocked(x: number, y: number) {

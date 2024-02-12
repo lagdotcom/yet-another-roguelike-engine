@@ -1,8 +1,7 @@
+import { DocumentParser } from "@lagdotcom/boring-parser";
 import * as categoryFiles from "bundle-text:../res/*.category";
 import * as monsterFiles from "bundle-text:../res/*.monster";
 import paletteData from "bundle-text:../res/colours.palette";
-
-import { DocumentParser } from "@lagdotcom/boring-parser";
 
 import MonsterCategoryParser from "./parsers/MonsterCategoryParser";
 import MonsterParser from "./parsers/MonsterParser";
@@ -12,7 +11,7 @@ import ResourceError from "./ResourceError";
 function loadAll<T>(
   parser: DocumentParser<T>,
   files: Record<string, string>,
-  ext = ""
+  ext = "",
 ): T[] {
   const objects: T[] = [];
   for (const name in files) {

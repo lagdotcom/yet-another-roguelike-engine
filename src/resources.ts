@@ -1,40 +1,28 @@
-import { DocumentParser } from "@lagdotcom/boring-parser";
-import * as categoryFiles from "bundle-text:../res/*.category";
-import * as monsterFiles from "bundle-text:../res/*.monster";
-import paletteData from "bundle-text:../res/colours.palette";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+import * as categoryFiles from "../res/*.category";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+import * as monsterFiles from "../res/*.monster";
+// eslint-disable-next-line @typescript-eslint/ban-ts-comment
+// @ts-expect-error
+import paletteData from "../res/colours.palette";
+import type { Monster, MonsterCategory, Palette } from "./types";
 
-import MonsterCategoryParser from "./parsers/MonsterCategoryParser";
-import MonsterParser from "./parsers/MonsterParser";
-import PaletteParser from "./parsers/PaletteParser";
-import ResourceError from "./ResourceError";
-
-function loadAll<T>(
-  parser: DocumentParser<T>,
-  files: Record<string, string>,
-  ext = "",
-): T[] {
-  const objects: T[] = [];
-  for (const name in files) {
-    const text = files[name];
-    try {
-      objects.push(...parser.parse(text));
-    } catch (e) {
-      throw new ResourceError(name + ext, e);
-    }
-  }
-
-  return objects;
+interface Barrel<T> {
+  default: T[];
 }
 
-export function loadAllCategories() {
-  return loadAll(new MonsterCategoryParser(), categoryFiles, ".category");
+export function loadAllCategories(): MonsterCategory[] {
+  return categoryFiles.default.flatMap(
+    (x: Barrel<MonsterCategory>) => x.default,
+  );
 }
 
-export function loadAllMonsters() {
-  return loadAll(new MonsterParser(), monsterFiles, ".monster");
+export function loadAllMonsters(): Monster[] {
+  return monsterFiles.default.flatMap((x: Barrel<Monster>) => x.default);
 }
 
-export function loadPalette() {
-  const p = new PaletteParser();
-  return p.apply(paletteData, {});
+export function loadPalette(): Palette {
+  return paletteData;
 }

@@ -1,5 +1,5 @@
 import { diff } from "deep-object-diff";
-import merge from "lodash.merge";
+import deepcopy from "deepcopy";
 import { nanoid } from "nanoid/non-secure";
 
 export class Component<T> {
@@ -46,7 +46,7 @@ abstract class BaseEntity {
 
   add<T>(component: Component<T>, data: T) {
     this.components.add(component);
-    component.add(this, merge({}, data));
+    component.add(this, deepcopy(data));
 
     // TODO: debugging only
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -88,9 +88,12 @@ abstract class BaseEntity {
   }
 
   prefabData() {
-    return merge(
+    return this.prefabs.reduce<Record<string, unknown>>(
+      (accumulatedData, name) => {
+        const prefabData = this.ecs.getPrefab(name).data();
+        return { ...accumulatedData, ...prefabData };
+      },
       {},
-      ...this.prefabs.map((name) => this.ecs.getPrefab(name).data()),
     );
   }
 }

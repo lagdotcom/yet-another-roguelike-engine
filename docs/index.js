@@ -3112,7 +3112,7 @@ __export(all_exports, {
 });
 var all_default = [{ logo: "a", name: "Awfs", desc: "Awfs are tiny humanoids who dwell in the hills surrounding Graydnmuch. Once almost feral, they've since learnt from the humans they scavenge from and have devised their own society, complete with religions and technology.", die: "The awf collapses with a wail.", drop: { JUNK: 85, TECH_CONSUMABLE: 35 }, tags: ["INTELLIGENT", "MUNDANE", "HUMANOID", "CHAOTIC", "NEUTRAL"], status: [], attack: [] }];
 
-// import-glob:../res/*.category
+// import-glob:../res/**/*.category
 var modules = [all_exports];
 var __default = modules;
 
@@ -3123,7 +3123,7 @@ __export(awf_exports, {
 });
 var awf_default = [{ cat: "a", col: "silver", name: "desperate awf", desc: "A little guy with a scarred turquoise body. He draws his cloak around himself and mutters.", level: 1, atts: [10, 9, 6], tags: ["SINGULAR"], status: [], attack: [], id: "awf_d" }, { cat: "a", col: "white", name: "mulnishel", desc: "This tiny awf has blindingly-white flesh and an anti-social scowl.", level: 2, atts: [7, 16, 7], tags: ["SINGULAR", "CAST_ONCE"], status: [], attack: [{ name: "hex", hp: 0, sp: 1, mp: 0, effects: [{ type: "DAMAGE", amount: 7 }, { type: "DOUBLE_DAMAGE", criterion: "LAWFUL" }] }], hname: "awfen hermit", weapon: "club_basic" }];
 
-// import-glob:../res/*.monster
+// import-glob:../res/**/*.monster
 var modules2 = [awf_exports];
 var __default2 = modules2;
 

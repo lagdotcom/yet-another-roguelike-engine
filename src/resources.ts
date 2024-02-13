@@ -1,9 +1,9 @@
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
-import * as categoryFiles from "../res/*.category";
+import * as categoryFiles from "../res/**/*.category";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
-import * as monsterFiles from "../res/*.monster";
+import * as monsterFiles from "../res/**/*.monster";
 // eslint-disable-next-line @typescript-eslint/ban-ts-comment
 // @ts-expect-error
 import paletteData from "../res/colours.palette";

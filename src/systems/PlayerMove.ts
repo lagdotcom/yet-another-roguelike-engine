@@ -15,7 +15,7 @@ const movementKeys = new Map<KeyCode, Point>([
   [Keys.VK_NUMPAD2, new Point(0, 1)],
   [Keys.VK_NUMPAD3, new Point(1, 1)],
 
-  // numpad (with numlock off)
+  // numpad (with num lock off)
   [Keys.VK_HOME, new Point(-1, -1)],
   [Keys.VK_UP, new Point(0, -1)],
   [Keys.VK_PAGE_UP, new Point(1, -1)],

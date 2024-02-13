@@ -1,3 +1,14 @@
 {
-  "cSpell.words": ["atts", "idealrange", "knockback"]
+  "cSpell.words": [
+    "atts",
+    "deepcopy",
+    "gameanalytics",
+    "idealrange",
+    "knockback",
+    "nanoid",
+    "regen",
+    "seedable",
+    "vars",
+    "wglt"
+  ]
 }

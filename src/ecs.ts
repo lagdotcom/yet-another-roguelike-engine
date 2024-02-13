@@ -22,6 +22,12 @@ export class Component<T> {
   }
 }
 
+interface SerialisedEntity {
+  id: string;
+  prefabs: string[];
+  overlay: object;
+}
+
 abstract class BaseEntity {
   protected components: Set<Component<unknown>>;
   protected prefabs: string[];
@@ -88,13 +94,10 @@ abstract class BaseEntity {
   }
 
   prefabData() {
-    return this.prefabs.reduce<Record<string, unknown>>(
-      (accumulatedData, name) => {
-        const prefabData = this.ecs.getPrefab(name).data();
-        return { ...accumulatedData, ...prefabData };
-      },
-      {},
-    );
+    return this.prefabs.reduce<object>((accumulatedData, name) => {
+      const prefabData = this.ecs.getPrefab(name).data();
+      return { ...accumulatedData, ...prefabData };
+    }, {});
   }
 }
 
@@ -125,6 +128,12 @@ export class Entity extends BaseEntity {
       this.ecs.remove(this);
       this.destroyed = true;
     }
+  }
+
+  serialise(): SerialisedEntity {
+    const { id, prefabs } = this;
+    const overlay = this.diffData();
+    return { id, prefabs, overlay };
   }
 }
 
@@ -251,6 +260,25 @@ export class Manager {
     } = {},
   ) {
     return this.query(options, false).get();
+  }
+
+  serialise() {
+    return Array.from(this.entities.values(), (e) => e.serialise());
+  }
+
+  restore(entities: SerialisedEntity[]) {
+    for (const { id, prefabs, overlay } of entities) {
+      const e = new Entity(
+        this,
+        id,
+        ...prefabs.map((name) => this.getPrefab(name)),
+      );
+
+      for (const [componentName, data] of Object.entries(overlay))
+        e.add(this.getComponent(componentName), data);
+
+      this.attach(e);
+    }
   }
 }
 

@@ -27,6 +27,9 @@ import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
 import type { Monster, MonsterCategory, Palette } from "./types";
 
+const catId = (logo: string) => `C:${logo}` as const;
+const monId = (name: string) => `M:${name}` as const;
+
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
   categories!: MonsterCategory[];
@@ -75,6 +78,7 @@ export default class Game extends EventEmitter<Events> {
     this.gui = new GUI(this.term);
 
     this.installCheats();
+    this.loadResources();
 
     try {
       const [x, y] = this.load();
@@ -94,11 +98,25 @@ export default class Game extends EventEmitter<Events> {
     for (const sys of this.systems) sys.process();
   }
 
-  private load(): [x: number, y: number] {
+  private loadResources() {
+    this.palette = loadPalette();
     this.categories = loadAllCategories();
     this.monsters = loadAllMonsters();
-    this.palette = loadPalette();
 
+    for (const category of this.categories)
+      this.ecs.prefab(catId(category.logo));
+
+    for (const monster of this.monsters) {
+      const colour = this.palette[monster.col] || this.palette.white;
+
+      this.ecs
+        .prefab(monId(monster.name), this.ecs.getPrefab(catId(monster.cat)))
+        .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
+        .add(Stats, this.getMonsterStats(monster));
+    }
+  }
+
+  private load(): [x: number, y: number] {
     const aa = new AmorphousAreaGenerator(this, 48);
     this.map = aa.map;
 
@@ -162,16 +180,11 @@ export default class Game extends EventEmitter<Events> {
   }
 
   spawnMonster(x: number, y: number, monster: Monster) {
-    const { categories, ecs, palette } = this;
+    const { categories, ecs } = this;
 
     const category = categories.find((cat) => cat.logo === monster.cat);
-    const colour = palette[monster.col] || palette.white;
 
-    const e = ecs
-      .entity()
-      .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
-      .add(Position, { x, y })
-      .add(Stats, this.getMonsterStats(monster));
+    const e = ecs.entity(monId(monster.name)).add(Position, { x, y });
 
     this.debug("spawn %d,%d %s (%s)", x, y, monster.name, category?.name);
     return e;

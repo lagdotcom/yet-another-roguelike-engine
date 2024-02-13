@@ -23,9 +23,9 @@ export const tileColours: Record<string, string> = {
   "@": "white",
 };
 
-export const tiledeco = ["ß", "¡", "§", "¶", "Þ"];
+export const tileDecorations = ["ß", "¡", "§", "¶", "Þ"];
 
-export const tilejunk = [
+export const tileJunk = [
   " ",
   " ",
   " ",

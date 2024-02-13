@@ -1731,8 +1731,8 @@ var tileColours = {
   "\xB3": "silver green",
   "@": "white"
 };
-var tiledeco = ["\xDF", "\xA1", "\xA7", "\xB6", "\xDE"];
-var tilejunk = [
+var tileDecorations = ["\xDF", "\xA1", "\xA7", "\xB6", "\xDE"];
+var tileJunk = [
   " ",
   " ",
   " ",
@@ -2599,32 +2599,38 @@ var times = (count, fn) => {
     results.push(fn(i));
   return results;
 };
+var adjacentOffsets = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0]
+];
 var AmorphousAreaGenerator = class {
-  constructor(g2, floorlv) {
+  constructor(g2, floorLevel) {
     this.g = g2;
-    this.floorlv = floorlv;
+    this.floorLevel = floorLevel;
     this.debug = (0, import_debug.default)("aag");
-    this.decor = times(3, () => g2.choose(tiledeco));
-    this.floorplan = new Grid(5, 5, () => "V");
+    this.decor = times(3, () => g2.choose(tileDecorations));
+    this.floorPlan = new Grid(5, 5, () => "V");
     const tries = g2.rng.randRange(4, 48);
     for (let n = 0; n < tries; n++) {
-      const xtend_x = this.floorplan.width;
-      const xtend_y = this.floorplan.height;
-      let xtarg = g2.rng.randRange(0, xtend_x - 1);
-      let ytarg = g2.rng.randRange(0, xtend_y - 1);
+      const extendX = this.floorPlan.width;
+      const extendY = this.floorPlan.height;
+      let targetX = g2.rng.randRange(0, extendX - 1);
+      let targetY = g2.rng.randRange(0, extendY - 1);
       if (n === 0) {
-        xtarg = 0;
-        ytarg = 0;
+        targetX = 0;
+        targetY = 0;
       }
-      const roomcode = g2.choose(dimNames);
-      const [xdim, ydim] = dimSizes[roomcode];
-      this.empty_check(xtarg, ytarg, xdim, ydim, roomcode, true);
-      this.expand_plan(xtend_x, xtend_y);
+      const roomCode = g2.choose(dimNames);
+      const [width, height] = dimSizes[roomCode];
+      this.emptyCheck(targetX, targetY, width, height, roomCode, true);
+      this.expandPlan(extendX, extendY);
     }
     this.wasteland();
-    this.simpleplan();
+    this.simplePlan();
     this.areaBank = (0, import_deepcopy.default)(areaBank);
-    this.pickrooms();
+    this.pickRooms();
     this.map = new GameMap(this.tiles.width, this.tiles.height, (x, y2) => {
       const glyph = this.tiles.get(x, y2);
       const opaque = walls.includes(glyph);
@@ -2634,15 +2640,15 @@ var AmorphousAreaGenerator = class {
       return { glyph, colour, opaque, blocks };
     });
   }
-  empty_check(xt, yt, xw, yw, rc, draw = false) {
+  emptyCheck(xt, yt, xw, yw, rc, draw = false) {
     let out = true;
     const points = [];
     for (let y2 = 0; y2 < yw; y2++) {
-      if (yt + y2 < this.floorplan.height) {
+      if (yt + y2 < this.floorPlan.height) {
         for (let x = 0; x < xw; x++) {
-          if (xt + x < this.floorplan.width) {
+          if (xt + x < this.floorPlan.width) {
             points.push([xt + x, yt + y2]);
-            if (this.floorplan.get(xt + x, yt + y2) !== "V") {
+            if (this.floorPlan.get(xt + x, yt + y2) !== "V") {
               out = false;
             }
           } else {
@@ -2657,57 +2663,57 @@ var AmorphousAreaGenerator = class {
       let first = true;
       for (const [x, y2] of points) {
         const char = first ? rc : "X";
-        this.floorplan.set(x, y2, char);
+        this.floorPlan.set(x, y2, char);
         first = false;
       }
     }
     return out;
   }
-  expand_plan(xt, yt) {
+  expandPlan(xt, yt) {
     let expandUp = false, expandDown = false, expandLeft = false, expandRight = false;
     for (let n = 0; n < xt; n++) {
-      if (this.floorplan.get(n, 0) !== "V")
+      if (this.floorPlan.get(n, 0) !== "V")
         expandUp = true;
-      if (this.floorplan.get(n, yt - 1) !== "V")
+      if (this.floorPlan.get(n, yt - 1) !== "V")
         expandDown = true;
     }
     for (let n = 0; n < yt; n++) {
-      if (this.floorplan.get(0, n) !== "V")
+      if (this.floorPlan.get(0, n) !== "V")
         expandLeft = true;
-      if (this.floorplan.get(xt - 1, n) !== "V")
+      if (this.floorPlan.get(xt - 1, n) !== "V")
         expandRight = true;
     }
-    const { width, height } = this.floorplan;
+    const { width, height } = this.floorPlan;
     if (expandUp)
-      this.floorplan = this.floorplan.expand(
+      this.floorPlan = this.floorPlan.expand(
         0,
         1,
-        (x, y2) => y2 === 0 ? "V" : this.floorplan.get(x, y2 - 1)
+        (x, y2) => y2 === 0 ? "V" : this.floorPlan.get(x, y2 - 1)
       );
     if (expandDown)
-      this.floorplan = this.floorplan.expand(
+      this.floorPlan = this.floorPlan.expand(
         0,
         1,
-        (x, y2) => y2 === height ? "V" : this.floorplan.get(x, y2)
+        (x, y2) => y2 === height ? "V" : this.floorPlan.get(x, y2)
       );
     if (expandLeft)
-      this.floorplan.expand(
+      this.floorPlan.expand(
         1,
         0,
-        (x, y2) => x === 0 ? "V" : this.floorplan.get(x - 1, y2)
+        (x, y2) => x === 0 ? "V" : this.floorPlan.get(x - 1, y2)
       );
     if (expandRight)
-      this.floorplan.expand(
+      this.floorPlan.expand(
         1,
         0,
-        (x, y2) => x === width ? "V" : this.floorplan.get(x, y2)
+        (x, y2) => x === width ? "V" : this.floorPlan.get(x, y2)
       );
   }
   wasteland() {
     const points = [];
-    for (let y2 = 0; y2 < this.floorplan.height; y2++) {
-      for (let x = 0; x < this.floorplan.width; x++) {
-        if (this.scan_around(this.floorplan, x, y2, "V", [
+    for (let y2 = 0; y2 < this.floorPlan.height; y2++) {
+      for (let x = 0; x < this.floorPlan.width; x++) {
+        if (this.scanAround(this.floorPlan, x, y2, "V", [
           "A",
           "B",
           "C",
@@ -2720,26 +2726,24 @@ var AmorphousAreaGenerator = class {
       }
     }
     for (const [x, y2] of points)
-      this.floorplan.set(x, y2, "W");
+      this.floorPlan.set(x, y2, "W");
   }
-  scan_around(fp, xt, yt, ifim, lookfor) {
+  scanAround(fp, xt, yt, middle, lookFor) {
     let out = false;
-    if (fp.get(xt, yt) === ifim) {
-      const offx = [0, 1, 0, -1];
-      const offy = [-1, 0, 1, 0];
-      for (let n = 0; n < 4; n++) {
-        const xn = xt + offx[n];
-        const yn = yt + offy[n];
-        if (fp.contains(xn, yn) && lookfor.includes(fp.get(xn, yn)))
+    if (fp.get(xt, yt) === middle) {
+      for (const [xo, yo] of adjacentOffsets) {
+        const xn = xo + xt;
+        const yn = yo + yt;
+        if (fp.contains(xn, yn) && lookFor.includes(fp.get(xn, yn)))
           out = true;
       }
     }
     return out;
   }
-  simpleplan() {
+  simplePlan() {
     this.debug(
       "simple plan",
-      "\n" + this.floorplan.toString((ch) => {
+      "\n" + this.floorPlan.toString((ch) => {
         if (ch === "V")
           return " ";
         if (ch === "W")
@@ -2748,21 +2752,18 @@ var AmorphousAreaGenerator = class {
       })
     );
   }
-  pickrooms() {
-    let xtw = this.floorplan.width * areaWidth;
-    let ytw = this.floorplan.height * areaHeight;
+  pickRooms() {
+    let xtw = this.floorPlan.width * areaWidth;
+    let ytw = this.floorPlan.height * areaHeight;
     this.tiles = new Grid(xtw, ytw, () => " ");
-    for (let y2 = 0; y2 < this.floorplan.height; y2++) {
-      for (let x = 0; x < this.floorplan.width; x++) {
-        const plan = this.floorplan.get(x, y2);
-        if (plan !== "V" && plan !== "X")
-          this.pasteroom(x * areaWidth, y2 * areaHeight, plan);
-      }
-    }
+    this.floorPlan.forEach((plan, x, y2) => {
+      if (plan !== "V" && plan !== "X")
+        this.pasteRoom(x * areaWidth, y2 * areaHeight, plan);
+    });
     const joins = [];
     for (let y2 = 0; y2 < ytw; y2++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.tiles, x, y2, "J", ["J"]))
+        if (this.scanAround(this.tiles, x, y2, "J", ["J"]))
           joins.push([x, y2]);
       }
     }
@@ -2778,13 +2779,15 @@ var AmorphousAreaGenerator = class {
     const empty = [];
     for (let y2 = 0; y2 < ytw; y2++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.tiles, x, y2, " ", ["#"]))
+        if (this.scanAround(this.tiles, x, y2, " ", ["#"]))
           empty.push([x, y2]);
       }
     }
     const spawns = Math.min(
       empty.length,
-      sqrt(xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv))
+      sqrt(
+        xtw + ytw + this.floorLevel + this.g.rng.randRange(1, this.floorLevel)
+      )
     );
     for (let n = 0; n < spawns; n++) {
       const index = this.g.rng.randRange(0, empty.length - 1);
@@ -2793,7 +2796,7 @@ var AmorphousAreaGenerator = class {
       if (n === 0)
         this.player = [x, y2];
       else
-        this.g.spawnRandomMonster(x, y2, this.floorlv);
+        this.g.spawnRandomMonster(x, y2, this.floorLevel);
     }
     for (let y2 = 0; y2 < ytw; y2++) {
       for (let x = 0; x < xtw; x++) {
@@ -2803,11 +2806,11 @@ var AmorphousAreaGenerator = class {
         if (ch === "~")
           this.tiles.set(x, y2, this.g.choose(this.decor));
         if (ch === ".")
-          this.tiles.set(x, y2, this.g.choose(tilejunk));
+          this.tiles.set(x, y2, this.g.choose(tileJunk));
       }
     }
   }
-  pasteroom(x, y2, plan) {
+  pasteRoom(x, y2, plan) {
     const prints = this.areaBank[plan];
     const blueprint = this.g.choose(prints);
     const i = prints.indexOf(blueprint);
@@ -2938,13 +2941,10 @@ var BaseEntity = class {
     return this.prefabs;
   }
   prefabData() {
-    return this.prefabs.reduce(
-      (accumulatedData, name) => {
-        const prefabData = this.ecs.getPrefab(name).data();
-        return { ...accumulatedData, ...prefabData };
-      },
-      {}
-    );
+    return this.prefabs.reduce((accumulatedData, name) => {
+      const prefabData = this.ecs.getPrefab(name).data();
+      return { ...accumulatedData, ...prefabData };
+    }, {});
   }
 };
 var Entity = class extends BaseEntity {
@@ -2968,6 +2968,11 @@ var Entity = class extends BaseEntity {
       this.ecs.remove(this);
       this.destroyed = true;
     }
+  }
+  serialise() {
+    const { id, prefabs } = this;
+    const overlay = this.diffData();
+    return { id, prefabs, overlay };
   }
 };
 var Prefab = class extends BaseEntity {
@@ -3054,6 +3059,21 @@ var Manager = class {
   }
   find(options = {}) {
     return this.query(options, false).get();
+  }
+  serialise() {
+    return Array.from(this.entities.values(), (e) => e.serialise());
+  }
+  restore(entities) {
+    for (const { id, prefabs, overlay } of entities) {
+      const e = new Entity(
+        this,
+        id,
+        ...prefabs.map((name) => this.getPrefab(name))
+      );
+      for (const [componentName, data] of Object.entries(overlay))
+        e.add(this.getComponent(componentName), data);
+      this.attach(e);
+    }
   }
 };
 var Query = class {
@@ -3253,7 +3273,7 @@ var movementKeys = /* @__PURE__ */ new Map([
   [m.VK_NUMPAD1, new f(-1, 1)],
   [m.VK_NUMPAD2, new f(0, 1)],
   [m.VK_NUMPAD3, new f(1, 1)],
-  // numpad (with numlock off)
+  // numpad (with num lock off)
   [m.VK_HOME, new f(-1, -1)],
   [m.VK_UP, new f(0, -1)],
   [m.VK_PAGE_UP, new f(1, -1)],
@@ -3308,6 +3328,8 @@ var PlayerMove = class {
 };
 
 // src/Game.ts
+var catId = (logo) => `C:${logo}`;
+var monId = (name) => `M:${name}`;
 var Game = class extends import_eventemitter3.default {
   constructor(canvas, width, height) {
     super();
@@ -3329,6 +3351,7 @@ var Game = class extends import_eventemitter3.default {
     this.term = new be(canvas, width, height);
     this.gui = new oe(this.term);
     this.installCheats();
+    this.loadResources();
     try {
       const [x, y2] = this.load();
       this.player.add(Position, { x, y: y2 });
@@ -3343,10 +3366,18 @@ var Game = class extends import_eventemitter3.default {
     for (const sys of this.systems)
       sys.process();
   }
-  load() {
+  loadResources() {
+    this.palette = loadPalette();
     this.categories = loadAllCategories();
     this.monsters = loadAllMonsters();
-    this.palette = loadPalette();
+    for (const category of this.categories)
+      this.ecs.prefab(catId(category.logo));
+    for (const monster of this.monsters) {
+      const colour = this.palette[monster.col] || this.palette.white;
+      this.ecs.prefab(monId(monster.name), this.ecs.getPrefab(catId(monster.cat))).add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) }).add(Stats, this.getMonsterStats(monster));
+    }
+  }
+  load() {
     const aa = new AmorphousAreaGenerator(this, 48);
     this.map = aa.map;
     if (aa.player)
@@ -3394,10 +3425,9 @@ var Game = class extends import_eventemitter3.default {
     return this.spawnMonster(x, y2, monster);
   }
   spawnMonster(x, y2, monster) {
-    const { categories, ecs: ecs2, palette } = this;
+    const { categories, ecs: ecs2 } = this;
     const category = categories.find((cat) => cat.logo === monster.cat);
-    const colour = palette[monster.col] || palette.white;
-    const e = ecs2.entity().add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) }).add(Position, { x, y: y2 }).add(Stats, this.getMonsterStats(monster));
+    const e = ecs2.entity(monId(monster.name)).add(Position, { x, y: y2 });
     this.debug("spawn %d,%d %s (%s)", x, y2, monster.name, category?.name);
     return e;
   }

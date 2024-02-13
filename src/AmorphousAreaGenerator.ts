@@ -9,8 +9,8 @@ import {
   dimSizes,
   type PlanID,
   tileColours,
-  tiledeco,
-  tilejunk,
+  tileDecorations,
+  tileJunk,
   walls,
 } from "./aagStuff";
 import type { XY } from "./events";
@@ -27,46 +27,53 @@ const times = <T>(count: number, fn: (n: number) => T): T[] => {
   return results;
 };
 
+const adjacentOffsets: XY[] = [
+  [0, -1],
+  [1, 0],
+  [0, 1],
+  [-1, 0],
+];
+
 export default class AmorphousAreaGenerator {
   areaBank: typeof areaBank;
   debug: Debugger;
   decor: string[];
-  floorplan: Grid<PlanID | "X">;
+  floorPlan: Grid<PlanID | "X">;
   map: GameMap;
   player!: XY;
   tiles!: Grid<string>;
 
   constructor(
     public g: Game,
-    public floorlv: number,
+    public floorLevel: number,
   ) {
     this.debug = debug("aag");
-    this.decor = times(3, () => g.choose(tiledeco));
-    this.floorplan = new Grid(5, 5, () => "V");
+    this.decor = times(3, () => g.choose(tileDecorations));
+    this.floorPlan = new Grid(5, 5, () => "V");
 
     const tries = g.rng.randRange(4, 48);
     for (let n = 0; n < tries; n++) {
-      const xtend_x = this.floorplan.width;
-      const xtend_y = this.floorplan.height;
-      let xtarg = g.rng.randRange(0, xtend_x - 1);
-      let ytarg = g.rng.randRange(0, xtend_y - 1);
+      const extendX = this.floorPlan.width;
+      const extendY = this.floorPlan.height;
+      let targetX = g.rng.randRange(0, extendX - 1);
+      let targetY = g.rng.randRange(0, extendY - 1);
 
       if (n === 0) {
-        xtarg = 0;
-        ytarg = 0;
+        targetX = 0;
+        targetY = 0;
       }
 
-      const roomcode = g.choose(dimNames);
-      const [xdim, ydim] = dimSizes[roomcode];
-      this.empty_check(xtarg, ytarg, xdim, ydim, roomcode, true);
-      this.expand_plan(xtend_x, xtend_y);
+      const roomCode = g.choose(dimNames);
+      const [width, height] = dimSizes[roomCode];
+      this.emptyCheck(targetX, targetY, width, height, roomCode, true);
+      this.expandPlan(extendX, extendY);
     }
 
     this.wasteland();
-    this.simpleplan();
+    this.simplePlan();
 
     this.areaBank = deepcopy(areaBank);
-    this.pickrooms();
+    this.pickRooms();
 
     this.map = new GameMap(this.tiles.width, this.tiles.height, (x, y) => {
       const glyph = this.tiles.get(x, y);
@@ -78,7 +85,7 @@ export default class AmorphousAreaGenerator {
     });
   }
 
-  empty_check(
+  emptyCheck(
     xt: number,
     yt: number,
     xw: number,
@@ -90,11 +97,11 @@ export default class AmorphousAreaGenerator {
     const points: XY[] = [];
 
     for (let y = 0; y < yw; y++) {
-      if (yt + y < this.floorplan.height) {
+      if (yt + y < this.floorPlan.height) {
         for (let x = 0; x < xw; x++) {
-          if (xt + x < this.floorplan.width) {
+          if (xt + x < this.floorPlan.width) {
             points.push([xt + x, yt + y]);
-            if (this.floorplan.get(xt + x, yt + y) !== "V") {
+            if (this.floorPlan.get(xt + x, yt + y) !== "V") {
               // console.log("Already taken.");
               out = false;
             }
@@ -113,7 +120,7 @@ export default class AmorphousAreaGenerator {
       let first = true;
       for (const [x, y] of points) {
         const char = first ? rc : "X";
-        this.floorplan.set(x, y, char);
+        this.floorPlan.set(x, y, char);
 
         first = false;
       }
@@ -122,48 +129,48 @@ export default class AmorphousAreaGenerator {
     return out;
   }
 
-  expand_plan(xt: number, yt: number) {
+  expandPlan(xt: number, yt: number) {
     let expandUp = false,
       expandDown = false,
       expandLeft = false,
       expandRight = false;
 
     for (let n = 0; n < xt; n++) {
-      if (this.floorplan.get(n, 0) !== "V") expandUp = true;
-      if (this.floorplan.get(n, yt - 1) !== "V") expandDown = true;
+      if (this.floorPlan.get(n, 0) !== "V") expandUp = true;
+      if (this.floorPlan.get(n, yt - 1) !== "V") expandDown = true;
     }
     for (let n = 0; n < yt; n++) {
-      if (this.floorplan.get(0, n) !== "V") expandLeft = true;
-      if (this.floorplan.get(xt - 1, n) !== "V") expandRight = true;
+      if (this.floorPlan.get(0, n) !== "V") expandLeft = true;
+      if (this.floorPlan.get(xt - 1, n) !== "V") expandRight = true;
     }
 
-    const { width, height } = this.floorplan;
+    const { width, height } = this.floorPlan;
 
     if (expandUp)
-      this.floorplan = this.floorplan.expand(0, 1, (x, y) =>
-        y === 0 ? "V" : this.floorplan.get(x, y - 1),
+      this.floorPlan = this.floorPlan.expand(0, 1, (x, y) =>
+        y === 0 ? "V" : this.floorPlan.get(x, y - 1),
       );
     if (expandDown)
-      this.floorplan = this.floorplan.expand(0, 1, (x, y) =>
-        y === height ? "V" : this.floorplan.get(x, y),
+      this.floorPlan = this.floorPlan.expand(0, 1, (x, y) =>
+        y === height ? "V" : this.floorPlan.get(x, y),
       );
     if (expandLeft)
-      this.floorplan.expand(1, 0, (x, y) =>
-        x === 0 ? "V" : this.floorplan.get(x - 1, y),
+      this.floorPlan.expand(1, 0, (x, y) =>
+        x === 0 ? "V" : this.floorPlan.get(x - 1, y),
       );
     if (expandRight)
-      this.floorplan.expand(1, 0, (x, y) =>
-        x === width ? "V" : this.floorplan.get(x, y),
+      this.floorPlan.expand(1, 0, (x, y) =>
+        x === width ? "V" : this.floorPlan.get(x, y),
       );
   }
 
   wasteland() {
     const points: XY[] = [];
 
-    for (let y = 0; y < this.floorplan.height; y++) {
-      for (let x = 0; x < this.floorplan.width; x++) {
+    for (let y = 0; y < this.floorPlan.height; y++) {
+      for (let x = 0; x < this.floorPlan.width; x++) {
         if (
-          this.scan_around(this.floorplan, x, y, "V", [
+          this.scanAround(this.floorPlan, x, y, "V", [
             "A",
             "B",
             "C",
@@ -177,29 +184,27 @@ export default class AmorphousAreaGenerator {
       }
     }
 
-    for (const [x, y] of points) this.floorplan.set(x, y, "W");
+    for (const [x, y] of points) this.floorPlan.set(x, y, "W");
   }
 
-  scan_around<T>(fp: Grid<T>, xt: number, yt: number, ifim: T, lookfor: T[]) {
+  scanAround<T>(fp: Grid<T>, xt: number, yt: number, middle: T, lookFor: T[]) {
     let out = false;
-    if (fp.get(xt, yt) === ifim) {
-      const offx = [0, 1, 0, -1];
-      const offy = [-1, 0, 1, 0];
-      for (let n = 0; n < 4; n++) {
-        const xn = xt + offx[n];
-        const yn = yt + offy[n];
-        if (fp.contains(xn, yn) && lookfor.includes(fp.get(xn, yn))) out = true;
+    if (fp.get(xt, yt) === middle) {
+      for (const [xo, yo] of adjacentOffsets) {
+        const xn = xo + xt;
+        const yn = yo + yt;
+        if (fp.contains(xn, yn) && lookFor.includes(fp.get(xn, yn))) out = true;
       }
     }
 
     return out;
   }
 
-  simpleplan() {
+  simplePlan() {
     this.debug(
       "simple plan",
       "\n" +
-        this.floorplan.toString((ch) => {
+        this.floorPlan.toString((ch) => {
           if (ch === "V") return " ";
           if (ch === "W") return "_";
           return "#";
@@ -207,25 +212,22 @@ export default class AmorphousAreaGenerator {
     );
   }
 
-  pickrooms() {
-    let xtw = this.floorplan.width * areaWidth;
-    let ytw = this.floorplan.height * areaHeight;
+  pickRooms() {
+    let xtw = this.floorPlan.width * areaWidth;
+    let ytw = this.floorPlan.height * areaHeight;
     this.tiles = new Grid(xtw, ytw, () => " ");
 
     // fill it in
-    for (let y = 0; y < this.floorplan.height; y++) {
-      for (let x = 0; x < this.floorplan.width; x++) {
-        const plan = this.floorplan.get(x, y);
-        if (plan !== "V" && plan !== "X")
-          this.pasteroom(x * areaWidth, y * areaHeight, plan);
-      }
-    }
+    this.floorPlan.forEach((plan, x, y) => {
+      if (plan !== "V" && plan !== "X")
+        this.pasteRoom(x * areaWidth, y * areaHeight, plan);
+    });
 
     // pair off joins
     const joins: XY[] = [];
     for (let y = 0; y < ytw; y++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.tiles, x, y, "J", ["J"])) joins.push([x, y]);
+        if (this.scanAround(this.tiles, x, y, "J", ["J"])) joins.push([x, y]);
       }
     }
     for (const [x, y] of joins) this.tiles.set(x, y, " ");
@@ -244,12 +246,14 @@ export default class AmorphousAreaGenerator {
     const empty: XY[] = [];
     for (let y = 0; y < ytw; y++) {
       for (let x = 0; x < xtw; x++) {
-        if (this.scan_around(this.tiles, x, y, " ", ["#"])) empty.push([x, y]);
+        if (this.scanAround(this.tiles, x, y, " ", ["#"])) empty.push([x, y]);
       }
     }
     const spawns = Math.min(
       empty.length,
-      sqrt(xtw + ytw + this.floorlv + this.g.rng.randRange(1, this.floorlv)),
+      sqrt(
+        xtw + ytw + this.floorLevel + this.g.rng.randRange(1, this.floorLevel),
+      ),
     );
     for (let n = 0; n < spawns; n++) {
       const index = this.g.rng.randRange(0, empty.length - 1);
@@ -257,7 +261,7 @@ export default class AmorphousAreaGenerator {
       empty.splice(index, 1);
       // const spz = this.g.choose(["®", "®", "®", "®", "®", "Ø", "Ø", "²"]);
       if (n === 0) this.player = [x, y];
-      else this.g.spawnRandomMonster(x, y, this.floorlv);
+      else this.g.spawnRandomMonster(x, y, this.floorLevel);
     }
 
     // flavour
@@ -266,12 +270,12 @@ export default class AmorphousAreaGenerator {
         let ch = this.tiles.get(x, y);
         if (ch === "J") ch = this.g.choose(["~", "."]);
         if (ch === "~") this.tiles.set(x, y, this.g.choose(this.decor));
-        if (ch === ".") this.tiles.set(x, y, this.g.choose(tilejunk));
+        if (ch === ".") this.tiles.set(x, y, this.g.choose(tileJunk));
       }
     }
   }
 
-  pasteroom(x: number, y: number, plan: PlanID) {
+  pasteRoom(x: number, y: number, plan: PlanID) {
     const prints = this.areaBank[plan];
     const blueprint = this.g.choose(prints);
     const i = prints.indexOf(blueprint);

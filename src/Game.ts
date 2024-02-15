@@ -21,7 +21,12 @@ import {
 } from "./formulae";
 import type GameMap from "./GameMap";
 import type ISystem from "./ISystem";
-import { loadAllCategories, loadAllMonsters, loadPalette } from "./resources";
+import {
+  FixedSys10x20,
+  loadAllCategories,
+  loadAllMonsters,
+  loadPalette,
+} from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
 import PlayerMove from "./systems/PlayerMove";
@@ -74,22 +79,23 @@ export default class Game extends EventEmitter<Events> {
 
     this.scrollX = 0;
     this.scrollY = 0;
-    this.term = new Terminal(canvas, width, height);
+    this.term = new Terminal(canvas, width, height, { font: FixedSys10x20 });
     this.gui = new GUI(this.term);
+    this.term.update = this.update.bind(this);
 
     this.installCheats();
     this.loadResources();
 
+    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
+
     try {
       const [x, y] = this.load();
       this.player.add(Position, { x, y });
+      this.emit("startLevel", [x, y]);
     } catch (e) {
       this.fatal(e);
       return;
     }
-
-    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
-    this.term.update = this.update.bind(this);
   }
 
   private update() {

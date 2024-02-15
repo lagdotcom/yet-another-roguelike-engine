@@ -31,6 +31,9 @@ const config = {
   outfile: "docs/bundle.js",
   define,
   // minify: true,
+  loader: {
+    ".png": "dataurl",
+  },
   plugins: [cdnPlugin, htmlPlugin(), importGlobPlugin(), dataLoaderPlugin],
 };
 export default config;

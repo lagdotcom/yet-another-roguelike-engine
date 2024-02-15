@@ -3130,6 +3130,9 @@ var __default2 = modules2;
 // res/colours.palette
 var colours_default = { black: 255, charcoal: 926365695, silver: -2021160961, white: -1, red: -15132161, "silver brown": -943233025, "silver purp": -814757889, "silver cyan": 1875363839, "silver green": 1875859455, "silver blue": 1869598719, dgreen: 13566207, green: 671033343, dblue: 117964799, blue: 926416895, dcyan: 664246271, cyan: 1207959551, dpurp: -1759012865, purp: -12058625, dyel: -1751701505, yel: -47105, dora: -1083241473, ora: -3336705 };
 
+// res/fixedsys_10x20.png
+var fixedsys_10x20_default = "data:image/png;base64,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";
+
 // src/resources.ts
 function loadAllCategories() {
   return __default.flatMap(
@@ -3142,6 +3145,7 @@ function loadAllMonsters() {
 function loadPalette() {
   return colours_default;
 }
+var FixedSys10x20 = new z(fixedsys_10x20_default, 10, 20);
 
 // src/systems/DrawScreen.ts
 var darken = (c2, mul = 0.25) => {
@@ -3150,6 +3154,8 @@ var darken = (c2, mul = 0.25) => {
   const r = c2 >> 24 & 255;
   return c(Math.floor(r * mul), Math.floor(g2 * mul), Math.floor(b * mul));
 };
+var visibleBg = c(8, 8, 8);
+var knownBg = c(4, 4, 4);
 var DrawScreen = class {
   constructor(g2) {
     this.g = g2;
@@ -3163,7 +3169,7 @@ var DrawScreen = class {
     if (!this.dirty)
       return;
     const { map, scrollX, scrollY, term } = this.g;
-    term.clear();
+    term.fillRect(0, 0, term.width, term.height, " ", -1, 0);
     for (let yo = 0; yo < term.height; yo++) {
       const y2 = yo + scrollY;
       for (let xo = 0; xo < term.width; xo++) {
@@ -3172,9 +3178,12 @@ var DrawScreen = class {
         if (c2?.explored && map.contains(x, y2)) {
           const tile = map.get(x, y2);
           let colour = tile.colour;
-          if (!term.isVisible(xo, yo))
+          let bg = visibleBg;
+          if (!term.isVisible(xo, yo)) {
             colour = darken(colour);
-          term.drawChar(xo, yo, tile.glyph, colour);
+            bg = knownBg;
+          }
+          term.drawChar(xo, yo, tile.glyph, colour, bg);
         }
       }
     }
@@ -3303,6 +3312,27 @@ function getMovementKey(term) {
 var PlayerMove = class {
   constructor(g2) {
     this.g = g2;
+    g2.on("move", (who) => {
+      if (who.has(PlayerTag)) {
+        const { x, y: y2 } = who.get(Position);
+        this.scrollTo([x, y2]);
+      }
+    });
+    g2.on("startLevel", this.scrollTo.bind(this));
+  }
+  scrollTo([x, y2]) {
+    const { scrollX, scrollY, term } = this.g;
+    const minX = scrollX;
+    const minY = scrollY;
+    const maxX = minX + term.width - 1;
+    const maxY = minY + term.height - 1;
+    if (x < minX || x > maxX || y2 < minY || y2 > maxY) {
+      const offsetX = Math.floor(x - term.width / 2);
+      const offsetY = Math.floor(y2 - term.height / 2);
+      const roundedX = offsetX - offsetX % 10;
+      const roundedY = offsetY - offsetY % 10;
+      this.g.emit("scroll", [roundedX, roundedY]);
+    }
   }
   process() {
     const { player, term } = this.g;
@@ -3348,19 +3378,20 @@ var Game = class extends import_eventemitter3.default {
     this.debug("seed", this.rng.seed);
     this.scrollX = 0;
     this.scrollY = 0;
-    this.term = new be(canvas, width, height);
+    this.term = new be(canvas, width, height, { font: FixedSys10x20 });
     this.gui = new oe(this.term);
+    this.term.update = this.update.bind(this);
     this.installCheats();
     this.loadResources();
+    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
     try {
       const [x, y2] = this.load();
       this.player.add(Position, { x, y: y2 });
+      this.emit("startLevel", [x, y2]);
     } catch (e) {
       this.fatal(e);
       return;
     }
-    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
-    this.term.update = this.update.bind(this);
   }
   update() {
     for (const sys of this.systems)
@@ -3471,7 +3502,7 @@ var Game = class extends import_eventemitter3.default {
 window.addEventListener("load", () => {
   const canvas = document.getElementById("main");
   canvas.focus();
-  const g2 = new Game(canvas, 80, 60);
+  const g2 = new Game(canvas, 80, 40);
   window.g = g2;
 });
 //# sourceMappingURL=index.js.map

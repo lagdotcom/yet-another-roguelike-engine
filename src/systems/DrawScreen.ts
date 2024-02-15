@@ -12,6 +12,9 @@ const darken = (c: number, mul = 0.25) => {
   return fromRgb(Math.floor(r * mul), Math.floor(g * mul), Math.floor(b * mul));
 };
 
+const visibleBg = fromRgb(8, 8, 8);
+const knownBg = fromRgb(4, 4, 4);
+
 export default class DrawScreen {
   dirty: boolean;
   drawable: Query;
@@ -30,7 +33,8 @@ export default class DrawScreen {
 
     const { map, scrollX, scrollY, term } = this.g;
 
-    term.clear();
+    // term.clear();
+    term.fillRect(0, 0, term.width, term.height, " ", -1, 0);
     for (let yo = 0; yo < term.height; yo++) {
       const y = yo + scrollY;
       for (let xo = 0; xo < term.width; xo++) {
@@ -40,8 +44,12 @@ export default class DrawScreen {
         if (c?.explored && map.contains(x, y)) {
           const tile = map.get(x, y);
           let colour = tile.colour;
-          if (!term.isVisible(xo, yo)) colour = darken(colour);
-          term.drawChar(xo, yo, tile.glyph, colour);
+          let bg = visibleBg;
+          if (!term.isVisible(xo, yo)) {
+            colour = darken(colour);
+            bg = knownBg;
+          }
+          term.drawChar(xo, yo, tile.glyph, colour, bg);
         }
       }
     }

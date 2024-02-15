@@ -1,6 +1,7 @@
 import { type KeyCode, Keys, Point, type Terminal } from "wglt";
 
-import { Position } from "../components";
+import { PlayerTag, Position } from "../components";
+import type { XY } from "../events";
 import type Game from "../Game";
 
 const movementKeys = new Map<KeyCode, Point>([
@@ -45,7 +46,33 @@ function getMovementKey(term: Terminal) {
 }
 
 export default class PlayerMove {
-  constructor(public g: Game) {}
+  constructor(public g: Game) {
+    g.on("move", (who) => {
+      if (who.has(PlayerTag)) {
+        const { x, y } = who.get(Position);
+        this.scrollTo([x, y]);
+      }
+    });
+    g.on("startLevel", this.scrollTo.bind(this));
+  }
+
+  scrollTo([x, y]: XY) {
+    const { scrollX, scrollY, term } = this.g;
+
+    const minX = scrollX;
+    const minY = scrollY;
+    const maxX = minX + term.width - 1;
+    const maxY = minY + term.height - 1;
+
+    if (x < minX || x > maxX || y < minY || y > maxY) {
+      const offsetX = Math.floor(x - term.width / 2);
+      const offsetY = Math.floor(y - term.height / 2);
+      const roundedX = offsetX - (offsetX % 10);
+      const roundedY = offsetY - (offsetY % 10);
+
+      this.g.emit("scroll", [roundedX, roundedY]);
+    }
+  }
 
   process() {
     const { player, term } = this.g;

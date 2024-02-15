@@ -138,10 +138,10 @@ const blankCategory = {
 /**
  * @param {string} typeName
  * @param {unknown} blank
- * @param {Record<string, (data: string, prev: unknown) => unknown} parsers
+ * @param {Record<string, (data: string, prev: unknown) => unknown} fieldParsers
  * @returns {(args: import("esbuild").OnLoadArgs) => import("esbuild").OnLoadResult}
  */
-const documentLoader = (typeName, blank, parsers) => (args) => {
+const documentLoader = (typeName, blank, fieldParsers) => (args) => {
   const lines = splitLines(grab(args.path));
 
   /** @type {import("esbuild").PartialMessage[]} */
@@ -158,18 +158,24 @@ const documentLoader = (typeName, blank, parsers) => (args) => {
     }
 
     const p = line.indexOf(":");
-    const key = line.slice(0, p).trim();
+    const field = line.slice(0, p).trim();
     const val = line.slice(p + 1).trim();
 
-    const parser = parsers[key];
+    const parser = fieldParsers[field];
     if (!parser)
       errors.push({
-        text: `unknown key: ${key}`,
+        text: `unknown field: ${field}`,
         location: { file: args.path, line: i + 1, lineText: line },
       });
     else {
-      // TODO errors
-      current[key] = parser(val, current[key]);
+      try {
+        current[field] = parser(val, current[field]);
+      } catch (e) {
+        errors.push({
+          text: e.message,
+          location: { file: args.path, line: i + 1, lineText: line },
+        });
+      }
     }
   }
 

@@ -136,12 +136,13 @@ const blankCategory = {
 };
 
 /**
- * @param {string} typeName
+ * @param {string} typeName singular
+ * @param {string} typeNames plural
  * @param {unknown} blank
  * @param {Record<string, (data: string, prev: unknown) => unknown} fieldParsers
  * @returns {(args: import("esbuild").OnLoadArgs) => import("esbuild").OnLoadResult}
  */
-const documentLoader = (typeName, blank, fieldParsers) => (args) => {
+const documentLoader = (typeName, typeNames, blank, fieldParsers) => (args) => {
   const lines = splitLines(grab(args.path));
 
   /** @type {import("esbuild").PartialMessage[]} */
@@ -179,12 +180,14 @@ const documentLoader = (typeName, blank, fieldParsers) => (args) => {
     }
   }
 
-  console.log(`${args.path}: ${data.length} ${typeName}`);
+  console.log(
+    `${args.path}: ${data.length} ${data.length === 1 ? typeName : typeNames}`,
+  );
 
   return { errors, contents: JSON.stringify(data), loader: "json" };
 };
 
-const loadCategory = documentLoader("categor(y/ies)", blankCategory, {
+const loadCategory = documentLoader("category", "categories", blankCategory, {
   logo: stringParser,
   name: stringParser,
   desc: stringParser,
@@ -208,7 +211,7 @@ const blankMonster = {
   attack: [],
 };
 
-const loadMonster = documentLoader("monster(s)", blankMonster, {
+const loadMonster = documentLoader("monster", "monsters", blankMonster, {
   id: stringParser,
   cat: stringParser,
   col: stringParser,

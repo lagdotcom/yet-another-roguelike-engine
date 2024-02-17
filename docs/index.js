@@ -2890,6 +2890,9 @@ var Component = class {
   add(en, data) {
     this.data[en.id] = data;
   }
+  clear() {
+    this.data = {};
+  }
   remove(en) {
     delete this.data[en.id];
   }
@@ -2902,14 +2905,16 @@ var BaseEntity = class {
     this.ecs = ecs2;
     this.id = id;
     this.components = /* @__PURE__ */ new Set();
-    this.prefabs = [];
-    for (const pf of prefabs) {
-      const pfd = pf.data();
-      for (const name in pfd) {
-        this.add(ecs2.getComponent(name), pfd[name]);
-      }
-      this.prefabs.push(pf.id);
-    }
+    this.prefabs = prefabs.map((pf) => pf.id);
+    for (const prefab of prefabs)
+      this.applyPrefab(prefab);
+  }
+  applyPrefab(prefab) {
+    for (const parentPrefab of prefab.prefabs)
+      this.applyPrefab(this.ecs.getPrefab(parentPrefab));
+    const componentData = prefab.data();
+    for (const name in componentData)
+      this.add(this.ecs.getComponent(name), componentData[name]);
   }
   add(component, data) {
     this.components.add(component);
@@ -2979,26 +2984,42 @@ var Prefab = class extends BaseEntity {
 };
 var Manager = class {
   constructor() {
-    this.components = {};
+    this.getPrefab = (name) => {
+      const pf = this.prefabs[name];
+      if (!pf)
+        throw new Error(`Unknown prefab: ${name}`);
+      return pf;
+    };
+    this.duplicate = (original) => {
+      const { prefabs, overlay } = original.serialise();
+      const e = this.entity(...prefabs);
+      for (const [componentName, data] of Object.entries(overlay))
+        e.add(this.getComponent(componentName), data);
+      return e;
+    };
+    this.components = /* @__PURE__ */ new Map();
     this.entities = /* @__PURE__ */ new Map();
     this.idGenerator = () => nanoid();
     this.prefabs = {};
     this.queries = [];
   }
   clear() {
-    const remove = this.remove.bind(this);
-    this.entities.forEach(remove);
+    this.entities.clear();
+    for (const component of this.components.values())
+      component.clear();
+    for (const query of this.queries)
+      query.clear();
   }
   register(name) {
     const comp = new Component(name);
-    this.components[name] = comp;
+    this.components.set(name, comp);
     return comp;
   }
   getEntity(id) {
     return this.entities.get(id);
   }
   getComponent(name) {
-    const co = this.components[name];
+    const co = this.components.get(name);
     if (!co)
       throw `Unknown component: ${name}`;
     return co;
@@ -3006,24 +3027,14 @@ var Manager = class {
   nextId() {
     return this.idGenerator();
   }
-  entity(...prefabs) {
+  entity(...prefabNames) {
     const id = this.nextId();
-    const en = new Entity(
-      this,
-      id,
-      ...prefabs.map((name) => this.getPrefab(name))
-    );
+    const en = new Entity(this, id, ...prefabNames.map(this.getPrefab));
     return this.attach(en);
   }
-  prefab(name, ...prefabs) {
-    const pf = new Prefab(this, name, ...prefabs);
+  prefab(name, ...prefabNames) {
+    const pf = new Prefab(this, name, ...prefabNames.map(this.getPrefab));
     this.prefabs[name] = pf;
-    return pf;
-  }
-  getPrefab(name) {
-    const pf = this.prefabs[name];
-    if (!pf)
-      throw `Unknown prefab: ${name}`;
     return pf;
   }
   attach(en) {
@@ -3041,7 +3052,7 @@ var Manager = class {
       q.remove(en);
     this.entities.delete(en.id);
   }
-  query({
+  query(name, {
     all,
     any,
     none
@@ -3050,6 +3061,7 @@ var Manager = class {
     const matchAny = any ? (en) => any.some((comp) => en.has(comp)) : () => true;
     const matchNone = none ? (en) => !none.some((comp) => en.has(comp)) : () => true;
     const query = new Query(
+      name,
       Array.from(this.entities.values()),
       (en) => matchAny(en) && matchAll(en) && matchNone(en)
     );
@@ -3058,7 +3070,7 @@ var Manager = class {
     return query;
   }
   find(options = {}) {
-    return this.query(options, false).get();
+    return this.query("(temporary)", options, false).get();
   }
   serialise() {
     return Array.from(this.entities.values(), (e) => e.serialise());
@@ -3077,8 +3089,10 @@ var Manager = class {
   }
 };
 var Query = class {
-  constructor(initial, match) {
+  constructor(name, initial, match) {
+    this.name = name;
     this.match = match;
+    this.get = () => Array.from(this.entities);
     this.entities = new Set(initial.filter(match));
   }
   add(en) {
@@ -3087,11 +3101,11 @@ var Query = class {
     else
       this.entities.delete(en);
   }
+  clear() {
+    this.entities.clear();
+  }
   remove(en) {
     this.entities.delete(en);
-  }
-  get() {
-    return Array.from(this.entities);
   }
 };
 var ecs = new Manager();
@@ -3101,9 +3115,13 @@ window.ecs = ecs;
 // src/components.ts
 var AI = ecs_default.register("AI");
 var Appearance = ecs_default.register("Appearance");
+var Carried = ecs_default.register("Carried");
+var Inventory = ecs_default.register("Inventory");
+var Item = ecs_default.register("Item");
 var Position = ecs_default.register("Position");
 var Stats = ecs_default.register("Stats");
-var PlayerTag = ecs_default.register("PlayerTag");
+var BlockerTag = ecs_default.register("Blocker");
+var PlayerTag = ecs_default.register("Player");
 
 // res/all.category
 var all_exports = {};
@@ -3160,7 +3178,9 @@ var DrawScreen = class {
   constructor(g2) {
     this.g = g2;
     this.dirty = true;
-    this.drawable = g2.ecs.query({ all: [Appearance, Position] });
+    this.drawable = g2.ecs.query("DrawScreen.drawable", {
+      all: [Appearance, Position]
+    });
     const redraw = () => this.dirty = true;
     g2.on("move", redraw);
     g2.on("scroll", redraw);
@@ -3187,7 +3207,7 @@ var DrawScreen = class {
         }
       }
     }
-    this.drawable.get().map((e) => {
+    this.drawable.get().sort((a, b) => a.get(Appearance).layer - b.get(Appearance).layer).map((e) => {
       const app = e.get(Appearance);
       const pos = e.get(Position);
       const x = pos.x - scrollX;
@@ -3270,73 +3290,154 @@ var PlayerFOV = class {
   }
 };
 
-// src/systems/PlayerMove.ts
-var movementKeys = /* @__PURE__ */ new Map([
-  // numpad
-  [m.VK_NUMPAD7, new f(-1, -1)],
-  [m.VK_NUMPAD8, new f(0, -1)],
-  [m.VK_NUMPAD9, new f(1, -1)],
-  [m.VK_NUMPAD4, new f(-1, 0)],
-  [m.VK_NUMPAD5, new f(0, 0)],
-  [m.VK_NUMPAD6, new f(1, 0)],
-  [m.VK_NUMPAD1, new f(-1, 1)],
-  [m.VK_NUMPAD2, new f(0, 1)],
-  [m.VK_NUMPAD3, new f(1, 1)],
-  // numpad (with num lock off)
-  [m.VK_HOME, new f(-1, -1)],
-  [m.VK_UP, new f(0, -1)],
-  [m.VK_PAGE_UP, new f(1, -1)],
-  [m.VK_LEFT, new f(-1, 0)],
-  ["Clear", new f(0, 0)],
-  [m.VK_RIGHT, new f(1, 0)],
-  [m.VK_END, new f(-1, 1)],
-  [m.VK_DOWN, new f(0, 1)],
-  [m.VK_PAGE_DOWN, new f(1, 1)],
-  // vi keys
-  [m.VK_Y, new f(-1, -1)],
-  [m.VK_K, new f(0, -1)],
-  [m.VK_U, new f(1, -1)],
-  [m.VK_H, new f(-1, 0)],
-  [m.VK_PERIOD, new f(0, 0)],
-  [m.VK_L, new f(1, 0)],
-  [m.VK_B, new f(-1, 1)],
-  [m.VK_J, new f(0, 1)],
-  [m.VK_N, new f(1, 1)]
-]);
-function getMovementKey(term) {
-  for (const [key, move] of movementKeys.entries()) {
-    if (term.isKeyPressed(key))
-      return move;
-  }
+// src/utils.ts
+function equalXY(a, b) {
+  return a.x === b.x && a.y === b.y;
 }
+function incrementMap(map, key, amount = 1) {
+  const old = map.get(key) ?? 0;
+  map.set(key, old + amount);
+}
+
+// src/systems/PlayerGet.ts
+var inventorySlots = "abcdefghijklmnopqrstuvwxyz";
+function addToInventory(carrier, item, getCarriedItems, duplicate) {
+  const { capacity } = carrier.get(Inventory);
+  const { id, maxStack, quantity } = item.get(Item);
+  const max = maxStack ?? 1;
+  const allInventory = getCarriedItems().filter(
+    (e) => e.get(Carried).by === carrier.id
+  );
+  const matches = allInventory.filter((e) => {
+    const ei = e.get(Item);
+    return ei.id === id && ei.quantity < max;
+  });
+  const assignments = /* @__PURE__ */ new Map();
+  let remaining = quantity;
+  while (remaining) {
+    if (matches.length) {
+      const match = matches[0];
+      const mc = match.get(Carried);
+      const mi = match.get(Item);
+      remaining--;
+      mi.quantity++;
+      incrementMap(assignments, mc.slot);
+      if (mi.quantity >= max)
+        matches.splice(0, 1);
+      continue;
+    }
+    if (allInventory.length >= capacity)
+      item.get(Item).quantity = remaining;
+    const slot = inventorySlots[allInventory.length];
+    const entry = duplicate(item);
+    entry.remove(Position);
+    entry.add(Carried, { by: carrier.id, slot });
+    allInventory.push(entry);
+    remaining--;
+    entry.get(Item).quantity = 1;
+    assignments.set(slot, 1);
+  }
+  return { assignments, remaining };
+}
+var PlayerGet = class {
+  constructor(g2) {
+    this.g = g2;
+    this.carried = g2.ecs.query("PlayerGet.carried", { all: [Carried, Item] });
+    this.items = g2.ecs.query("PlayerGet.items", { all: [Position, Item] });
+  }
+  addToInventory(carrier, item) {
+    return addToInventory(
+      carrier,
+      item,
+      this.carried.get,
+      this.g.ecs.duplicate
+    );
+  }
+  process() {
+    const { player, term } = this.g;
+    const active = term.isKeyPressed("Comma") || term.isKeyPressed("KeyG");
+    if (!active)
+      return;
+    const pos = player.get(Position);
+    const items = this.items.get().filter((e) => equalXY(pos, e.get(Position)));
+    if (!items.length) {
+      this.g.emit("log", "no items here");
+      return;
+    }
+    const removeItems = [];
+    for (const item of items) {
+      const { assignments, remaining } = this.addToInventory(player, item);
+      if (!remaining)
+        removeItems.push(item);
+      for (const [slot, qty] of assignments)
+        this.g.emit("log", `(${slot}) ${qty}x ${item.get(Appearance).name}`);
+    }
+    for (const item of removeItems)
+      item.destroy();
+  }
+};
+
+// src/systems/PlayerMove.ts
+var movementKeys = {
+  // numpad
+  [m.VK_NUMPAD7]: new f(-1, -1),
+  [m.VK_NUMPAD8]: new f(0, -1),
+  [m.VK_NUMPAD9]: new f(1, -1),
+  [m.VK_NUMPAD4]: new f(-1, 0),
+  [m.VK_NUMPAD5]: new f(0, 0),
+  [m.VK_NUMPAD6]: new f(1, 0),
+  [m.VK_NUMPAD1]: new f(-1, 1),
+  [m.VK_NUMPAD2]: new f(0, 1),
+  [m.VK_NUMPAD3]: new f(1, 1),
+  // numpad (with num lock off)
+  [m.VK_HOME]: new f(-1, -1),
+  [m.VK_UP]: new f(0, -1),
+  [m.VK_PAGE_UP]: new f(1, -1),
+  [m.VK_LEFT]: new f(-1, 0),
+  ["Clear"]: new f(0, 0),
+  [m.VK_RIGHT]: new f(1, 0),
+  [m.VK_END]: new f(-1, 1),
+  [m.VK_DOWN]: new f(0, 1),
+  [m.VK_PAGE_DOWN]: new f(1, 1),
+  // vi keys
+  [m.VK_Y]: new f(-1, -1),
+  [m.VK_K]: new f(0, -1),
+  [m.VK_U]: new f(1, -1),
+  [m.VK_H]: new f(-1, 0),
+  [m.VK_PERIOD]: new f(0, 0),
+  [m.VK_L]: new f(1, 0),
+  [m.VK_B]: new f(-1, 1),
+  [m.VK_J]: new f(0, 1),
+  [m.VK_N]: new f(1, 1)
+};
 var PlayerMove = class {
   constructor(g2) {
     this.g = g2;
+    this.scrollTo = ([x, y2]) => {
+      const { scrollX, scrollY, term } = this.g;
+      const minX = scrollX;
+      const minY = scrollY;
+      const maxX = minX + term.width - 1;
+      const maxY = minY + term.height - 1;
+      if (x < minX || x > maxX || y2 < minY || y2 > maxY) {
+        const offsetX = Math.floor(x - term.width / 2);
+        const offsetY = Math.floor(y2 - term.height / 2);
+        const roundedX = offsetX - offsetX % 10;
+        const roundedY = offsetY - offsetY % 10;
+        this.g.emit("scroll", [roundedX, roundedY]);
+      }
+    };
     g2.on("move", (who) => {
       if (who.has(PlayerTag)) {
         const { x, y: y2 } = who.get(Position);
         this.scrollTo([x, y2]);
       }
     });
-    g2.on("startLevel", this.scrollTo.bind(this));
-  }
-  scrollTo([x, y2]) {
-    const { scrollX, scrollY, term } = this.g;
-    const minX = scrollX;
-    const minY = scrollY;
-    const maxX = minX + term.width - 1;
-    const maxY = minY + term.height - 1;
-    if (x < minX || x > maxX || y2 < minY || y2 > maxY) {
-      const offsetX = Math.floor(x - term.width / 2);
-      const offsetY = Math.floor(y2 - term.height / 2);
-      const roundedX = offsetX - offsetX % 10;
-      const roundedY = offsetY - offsetY % 10;
-      this.g.emit("scroll", [roundedX, roundedY]);
-    }
+    g2.on("startLevel", this.scrollTo);
   }
   process() {
     const { player, term } = this.g;
-    const move = getMovementKey(term);
+    const move = term.getMovementKey(movementKeys);
     if (!move)
       return;
     if (move.x === 0 && move.y === 0)
@@ -3365,14 +3466,24 @@ var Game = class extends import_eventemitter3.default {
     super();
     this.width = width;
     this.height = height;
+    this.update = () => {
+      for (const sys of this.systems)
+        sys.process();
+    };
     this.debug = (0, import_debug2.default)("game");
     this.emit = (event, ...args) => {
       this.debug("event", event, ...args);
       return super.emit(event, ...args);
     };
     this.ecs = ecs_default;
-    this.blockers = ecs_default.query({ all: [Position] });
-    ecs_default.prefab("player").add(Appearance, { colour: y.WHITE, glyph: "@".charCodeAt(0) }).add(Stats, this.getPlayerStats(3, 3, 3, 1)).add(PlayerTag, {});
+    this.blockers = ecs_default.query("Game.blockers", { all: [Position, BlockerTag] });
+    ecs_default.prefab("creature").add(BlockerTag, {});
+    ecs_default.prefab("player", "creature").add(Appearance, {
+      name: "you",
+      layer: 2 /* Player */,
+      colour: y.WHITE,
+      glyph: "@".charCodeAt(0)
+    }).add(Inventory, { capacity: 10 }).add(Stats, this.getPlayerStats(3, 3, 3, 1)).add(PlayerTag, {});
     this.player = ecs_default.entity("player");
     this.rng = random;
     this.debug("seed", this.rng.seed);
@@ -3380,33 +3491,47 @@ var Game = class extends import_eventemitter3.default {
     this.scrollY = 0;
     this.term = new be(canvas, width, height, { font: FixedSys10x20 });
     this.gui = new oe(this.term);
-    this.term.update = this.update.bind(this);
+    this.term.update = this.update;
     this.installCheats();
     this.loadResources();
-    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
+    this.systems = [PlayerMove, PlayerGet, PlayerFOV, DrawScreen].map(
+      (System) => new System(this)
+    );
     try {
       const [x, y2] = this.load();
       this.player.add(Position, { x, y: y2 });
+      ecs_default.entity().add(Appearance, {
+        name: "mystery item",
+        layer: 0 /* Item */,
+        colour: y.YELLOW,
+        glyph: "?".charCodeAt(0)
+      }).add(Position, { x, y: y2 }).add(Item, { id: "mystery", quantity: 1 });
       this.emit("startLevel", [x, y2]);
     } catch (e) {
       this.fatal(e);
       return;
     }
   }
-  update() {
-    for (const sys of this.systems)
-      sys.process();
-  }
   loadResources() {
-    this.palette = loadPalette();
-    this.categories = loadAllCategories();
-    this.monsters = loadAllMonsters();
-    for (const category of this.categories)
-      this.ecs.prefab(catId(category.logo));
-    for (const monster of this.monsters) {
-      const colour = this.palette[monster.col] || this.palette.white;
-      this.ecs.prefab(monId(monster.name), this.ecs.getPrefab(catId(monster.cat))).add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) }).add(Stats, this.getMonsterStats(monster));
+    const { ecs: ecs2 } = this;
+    const palette = loadPalette();
+    const categories = loadAllCategories();
+    const monsters = loadAllMonsters();
+    ecs2.prefab("monster", "creature");
+    for (const cat of categories)
+      ecs2.prefab(catId(cat.logo), "monster");
+    for (const monster of monsters) {
+      const colour = palette[monster.col] || palette.white;
+      ecs2.prefab(monId(monster.name), catId(monster.cat)).add(Appearance, {
+        name: monster.hname ?? monster.name,
+        layer: 1 /* Monster */,
+        colour,
+        glyph: monster.cat.charCodeAt(0)
+      }).add(Stats, this.getMonsterStats(monster));
     }
+    this.palette = palette;
+    this.categories = categories;
+    this.monsters = monsters;
   }
   load() {
     const aa = new AmorphousAreaGenerator(this, 48);
@@ -3444,7 +3569,7 @@ var Game = class extends import_eventemitter3.default {
       return true;
     for (const e of this.blockers.get()) {
       const pos = e.get(Position);
-      if (pos.x === x && pos.y === y2)
+      if (equalXY(pos, { x, y: y2 }))
         return true;
     }
     return false;

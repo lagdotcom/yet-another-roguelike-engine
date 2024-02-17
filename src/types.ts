@@ -65,3 +65,9 @@ export interface Status {
 }
 
 export type Palette = Record<string, number>;
+
+export enum Layer {
+  Item,
+  Monster,
+  Player,
+}

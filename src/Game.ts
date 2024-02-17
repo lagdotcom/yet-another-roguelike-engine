@@ -6,7 +6,10 @@ import { Colors, GUI, MessageDialog, Terminal } from "wglt";
 import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
 import {
   Appearance,
+  BlockerTag,
+  Inventory,
   type IStats,
+  Item,
   PlayerTag,
   Position,
   Stats,
@@ -29,8 +32,15 @@ import {
 } from "./resources";
 import DrawScreen from "./systems/DrawScreen";
 import PlayerFOV from "./systems/PlayerFOV";
+import PlayerGet from "./systems/PlayerGet";
 import PlayerMove from "./systems/PlayerMove";
-import type { Monster, MonsterCategory, Palette } from "./types";
+import {
+  Layer,
+  type Monster,
+  type MonsterCategory,
+  type Palette,
+} from "./types";
+import { equalXY } from "./utils";
 
 const catId = (logo: string) => `C:${logo}` as const;
 const monId = (name: string) => `M:${name}` as const;
@@ -65,11 +75,19 @@ export default class Game extends EventEmitter<Events> {
     };
 
     this.ecs = ecs;
-    this.blockers = ecs.query({ all: [Position] });
+    this.blockers = ecs.query("Game.blockers", { all: [Position, BlockerTag] });
+
+    ecs.prefab("creature").add(BlockerTag, {});
 
     ecs
-      .prefab("player")
-      .add(Appearance, { colour: Colors.WHITE, glyph: "@".charCodeAt(0) })
+      .prefab("player", "creature")
+      .add(Appearance, {
+        name: "you",
+        layer: Layer.Player,
+        colour: Colors.WHITE,
+        glyph: "@".charCodeAt(0),
+      })
+      .add(Inventory, { capacity: 10 })
       .add(Stats, this.getPlayerStats(3, 3, 3, 1))
       .add(PlayerTag, {});
     this.player = ecs.entity("player");
@@ -81,16 +99,30 @@ export default class Game extends EventEmitter<Events> {
     this.scrollY = 0;
     this.term = new Terminal(canvas, width, height, { font: FixedSys10x20 });
     this.gui = new GUI(this.term);
-    this.term.update = this.update.bind(this);
+    this.term.update = this.update;
 
     this.installCheats();
     this.loadResources();
 
-    this.systems = [PlayerMove, PlayerFOV, DrawScreen].map((s) => new s(this));
+    this.systems = [PlayerMove, PlayerGet, PlayerFOV, DrawScreen].map(
+      (System) => new System(this),
+    );
 
     try {
       const [x, y] = this.load();
       this.player.add(Position, { x, y });
+
+      ecs
+        .entity()
+        .add(Appearance, {
+          name: "mystery item",
+          layer: Layer.Item,
+          colour: Colors.YELLOW,
+          glyph: "?".charCodeAt(0),
+        })
+        .add(Position, { x, y })
+        .add(Item, { id: "mystery", quantity: 1 });
+
       this.emit("startLevel", [x, y]);
     } catch (e) {
       this.fatal(e);
@@ -98,28 +130,39 @@ export default class Game extends EventEmitter<Events> {
     }
   }
 
-  private update() {
+  private update = () => {
     // TODO: if (this.gui.handleInput()) ...
 
     for (const sys of this.systems) sys.process();
-  }
+  };
 
   private loadResources() {
-    this.palette = loadPalette();
-    this.categories = loadAllCategories();
-    this.monsters = loadAllMonsters();
+    const { ecs } = this;
+    const palette = loadPalette();
+    const categories = loadAllCategories();
+    const monsters = loadAllMonsters();
 
-    for (const category of this.categories)
-      this.ecs.prefab(catId(category.logo));
+    ecs.prefab("monster", "creature");
 
-    for (const monster of this.monsters) {
-      const colour = this.palette[monster.col] || this.palette.white;
+    for (const cat of categories) ecs.prefab(catId(cat.logo), "monster");
 
-      this.ecs
-        .prefab(monId(monster.name), this.ecs.getPrefab(catId(monster.cat)))
-        .add(Appearance, { colour, glyph: monster.cat.charCodeAt(0) })
+    for (const monster of monsters) {
+      const colour = palette[monster.col] || palette.white;
+
+      ecs
+        .prefab(monId(monster.name), catId(monster.cat))
+        .add(Appearance, {
+          name: monster.hname ?? monster.name,
+          layer: Layer.Monster,
+          colour,
+          glyph: monster.cat.charCodeAt(0),
+        })
         .add(Stats, this.getMonsterStats(monster));
     }
+
+    this.palette = palette;
+    this.categories = categories;
+    this.monsters = monsters;
   }
 
   private load(): [x: number, y: number] {
@@ -170,7 +213,7 @@ export default class Game extends EventEmitter<Events> {
 
     for (const e of this.blockers.get()) {
       const pos = e.get(Position);
-      if (pos.x === x && pos.y === y) return true;
+      if (equalXY(pos, { x, y })) return true;
     }
 
     return false;

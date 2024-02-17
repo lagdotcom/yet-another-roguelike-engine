@@ -1,49 +1,43 @@
-import { type KeyCode, Keys, Point, type Terminal } from "wglt";
+import { type KeyCode, Keys, Point } from "wglt";
 
 import { PlayerTag, Position } from "../components";
 import type { XY } from "../events";
 import type Game from "../Game";
 
-const movementKeys = new Map<KeyCode, Point>([
+const movementKeys: Partial<Record<KeyCode, Point>> = {
   // numpad
-  [Keys.VK_NUMPAD7, new Point(-1, -1)],
-  [Keys.VK_NUMPAD8, new Point(0, -1)],
-  [Keys.VK_NUMPAD9, new Point(1, -1)],
-  [Keys.VK_NUMPAD4, new Point(-1, 0)],
-  [Keys.VK_NUMPAD5, new Point(0, 0)],
-  [Keys.VK_NUMPAD6, new Point(1, 0)],
-  [Keys.VK_NUMPAD1, new Point(-1, 1)],
-  [Keys.VK_NUMPAD2, new Point(0, 1)],
-  [Keys.VK_NUMPAD3, new Point(1, 1)],
+  [Keys.VK_NUMPAD7]: new Point(-1, -1),
+  [Keys.VK_NUMPAD8]: new Point(0, -1),
+  [Keys.VK_NUMPAD9]: new Point(1, -1),
+  [Keys.VK_NUMPAD4]: new Point(-1, 0),
+  [Keys.VK_NUMPAD5]: new Point(0, 0),
+  [Keys.VK_NUMPAD6]: new Point(1, 0),
+  [Keys.VK_NUMPAD1]: new Point(-1, 1),
+  [Keys.VK_NUMPAD2]: new Point(0, 1),
+  [Keys.VK_NUMPAD3]: new Point(1, 1),
 
   // numpad (with num lock off)
-  [Keys.VK_HOME, new Point(-1, -1)],
-  [Keys.VK_UP, new Point(0, -1)],
-  [Keys.VK_PAGE_UP, new Point(1, -1)],
-  [Keys.VK_LEFT, new Point(-1, 0)],
-  ["Clear" as KeyCode, new Point(0, 0)],
-  [Keys.VK_RIGHT, new Point(1, 0)],
-  [Keys.VK_END, new Point(-1, 1)],
-  [Keys.VK_DOWN, new Point(0, 1)],
-  [Keys.VK_PAGE_DOWN, new Point(1, 1)],
+  [Keys.VK_HOME]: new Point(-1, -1),
+  [Keys.VK_UP]: new Point(0, -1),
+  [Keys.VK_PAGE_UP]: new Point(1, -1),
+  [Keys.VK_LEFT]: new Point(-1, 0),
+  ["Clear" as KeyCode]: new Point(0, 0),
+  [Keys.VK_RIGHT]: new Point(1, 0),
+  [Keys.VK_END]: new Point(-1, 1),
+  [Keys.VK_DOWN]: new Point(0, 1),
+  [Keys.VK_PAGE_DOWN]: new Point(1, 1),
 
   // vi keys
-  [Keys.VK_Y, new Point(-1, -1)],
-  [Keys.VK_K, new Point(0, -1)],
-  [Keys.VK_U, new Point(1, -1)],
-  [Keys.VK_H, new Point(-1, 0)],
-  [Keys.VK_PERIOD, new Point(0, 0)],
-  [Keys.VK_L, new Point(1, 0)],
-  [Keys.VK_B, new Point(-1, 1)],
-  [Keys.VK_J, new Point(0, 1)],
-  [Keys.VK_N, new Point(1, 1)],
-]);
-
-function getMovementKey(term: Terminal) {
-  for (const [key, move] of movementKeys.entries()) {
-    if (term.isKeyPressed(key)) return move;
-  }
-}
+  [Keys.VK_Y]: new Point(-1, -1),
+  [Keys.VK_K]: new Point(0, -1),
+  [Keys.VK_U]: new Point(1, -1),
+  [Keys.VK_H]: new Point(-1, 0),
+  [Keys.VK_PERIOD]: new Point(0, 0),
+  [Keys.VK_L]: new Point(1, 0),
+  [Keys.VK_B]: new Point(-1, 1),
+  [Keys.VK_J]: new Point(0, 1),
+  [Keys.VK_N]: new Point(1, 1),
+};
 
 export default class PlayerMove {
   constructor(public g: Game) {
@@ -53,10 +47,10 @@ export default class PlayerMove {
         this.scrollTo([x, y]);
       }
     });
-    g.on("startLevel", this.scrollTo.bind(this));
+    g.on("startLevel", this.scrollTo);
   }
 
-  scrollTo([x, y]: XY) {
+  scrollTo = ([x, y]: XY) => {
     const { scrollX, scrollY, term } = this.g;
 
     const minX = scrollX;
@@ -72,12 +66,12 @@ export default class PlayerMove {
 
       this.g.emit("scroll", [roundedX, roundedY]);
     }
-  }
+  };
 
   process() {
     const { player, term } = this.g;
 
-    const move = getMovementKey(term);
+    const move = term.getMovementKey(movementKeys);
     if (!move) return;
 
     // TODO: wait

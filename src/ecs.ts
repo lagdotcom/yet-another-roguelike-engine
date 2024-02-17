@@ -2,8 +2,10 @@ import { diff } from "deep-object-diff";
 import deepcopy from "deepcopy";
 import { nanoid } from "nanoid/non-secure";
 
+export type EntityID = string;
+
 export class Component<T> {
-  private data: Record<string, T>;
+  private data: Record<EntityID, T>;
 
   constructor(public name: string) {
     this.data = {};
@@ -11,6 +13,10 @@ export class Component<T> {
 
   add(en: BaseEntity, data: T) {
     this.data[en.id] = data;
+  }
+
+  clear() {
+    this.data = {};
   }
 
   remove(en: BaseEntity) {
@@ -23,7 +29,7 @@ export class Component<T> {
 }
 
 interface SerialisedEntity {
-  id: string;
+  id: EntityID;
   prefabs: string[];
   overlay: object;
 }
@@ -34,20 +40,22 @@ abstract class BaseEntity {
 
   constructor(
     protected ecs: Manager,
-    public id: string,
+    public id: EntityID,
     ...prefabs: readonly Prefab[]
   ) {
     this.components = new Set<Component<unknown>>();
 
-    this.prefabs = [];
-    for (const pf of prefabs) {
-      const pfd = pf.data();
-      for (const name in pfd) {
-        this.add(ecs.getComponent(name), pfd[name]);
-      }
+    this.prefabs = prefabs.map((pf) => pf.id);
+    for (const prefab of prefabs) this.applyPrefab(prefab);
+  }
 
-      this.prefabs.push(pf.id);
-    }
+  applyPrefab(prefab: Prefab) {
+    for (const parentPrefab of prefab.prefabs)
+      this.applyPrefab(this.ecs.getPrefab(parentPrefab));
+
+    const componentData = prefab.data();
+    for (const name in componentData)
+      this.add(this.ecs.getComponent(name), componentData[name]);
   }
 
   add<T>(component: Component<T>, data: T) {
@@ -104,7 +112,7 @@ abstract class BaseEntity {
 export class Entity extends BaseEntity {
   private destroyed: boolean;
 
-  constructor(ecs: Manager, id: string, ...prefabs: readonly Prefab[]) {
+  constructor(ecs: Manager, id: EntityID, ...prefabs: readonly Prefab[]) {
     super(ecs, id, ...prefabs);
     this.destroyed = false;
   }
@@ -140,38 +148,39 @@ export class Entity extends BaseEntity {
 export class Prefab extends BaseEntity {}
 
 export class Manager {
-  private components: Record<string, Component<unknown>>;
-  private entities: Map<string, Entity>;
-  private idGenerator: () => string;
+  private components: Map<string, Component<unknown>>;
+  private entities: Map<EntityID, Entity>;
+  private idGenerator: () => EntityID;
   private prefabs: Record<string, Prefab>;
   private queries: Query[];
 
   constructor() {
-    this.components = {};
-    this.entities = new Map<string, Entity>();
+    this.components = new Map();
+    this.entities = new Map();
     this.idGenerator = () => nanoid();
     this.prefabs = {};
     this.queries = [];
   }
 
   clear() {
-    const remove = this.remove.bind(this);
-    this.entities.forEach(remove);
+    this.entities.clear();
+    for (const component of this.components.values()) component.clear();
+    for (const query of this.queries) query.clear();
   }
 
-  register<T>(name: string): Component<T> {
+  register<T>(name: string) {
     const comp = new Component<T>(name);
-    this.components[name] = comp;
+    this.components.set(name, comp);
 
     return comp;
   }
 
-  getEntity(id: string) {
+  getEntity(id: EntityID) {
     return this.entities.get(id);
   }
 
-  getComponent<T>(name: string): Component<T> {
-    const co = this.components[name];
+  getComponent<T>(name: string) {
+    const co = this.components.get(name);
     if (!co) throw `Unknown component: ${name}`;
 
     return co as Component<T>;
@@ -181,30 +190,26 @@ export class Manager {
     return this.idGenerator();
   }
 
-  entity(...prefabs: readonly string[]): Entity {
+  entity(...prefabNames: readonly string[]) {
     const id = this.nextId();
-    const en = new Entity(
-      this,
-      id,
-      ...prefabs.map((name) => this.getPrefab(name)),
-    );
+    const en = new Entity(this, id, ...prefabNames.map(this.getPrefab));
     return this.attach(en);
   }
 
-  prefab(name: string, ...prefabs: readonly Prefab[]): Prefab {
-    const pf = new Prefab(this, name, ...prefabs);
+  prefab(name: string, ...prefabNames: readonly string[]) {
+    const pf = new Prefab(this, name, ...prefabNames.map(this.getPrefab));
     this.prefabs[name] = pf;
     return pf;
   }
 
-  getPrefab(name: string): Prefab {
+  getPrefab = (name: string) => {
     const pf = this.prefabs[name];
-    if (!pf) throw `Unknown prefab: ${name}`;
+    if (!pf) throw new Error(`Unknown prefab: ${name}`);
 
     return pf;
-  }
+  };
 
-  attach(en: Entity): Entity {
+  attach(en: Entity) {
     this.entities.set(en.id, en);
     for (const q of this.queries) q.add(en);
     return en;
@@ -220,6 +225,7 @@ export class Manager {
   }
 
   query(
+    name: string,
     {
       all,
       any,
@@ -244,6 +250,7 @@ export class Manager {
       : () => true;
 
     const query = new Query(
+      name,
       Array.from(this.entities.values()),
       (en) => matchAny(en) && matchAll(en) && matchNone(en),
     );
@@ -259,7 +266,7 @@ export class Manager {
       none?: readonly Component<unknown>[];
     } = {},
   ) {
-    return this.query(options, false).get();
+    return this.query("(temporary)", options, false).get();
   }
 
   serialise() {
@@ -280,12 +287,23 @@ export class Manager {
       this.attach(e);
     }
   }
+
+  duplicate = (original: Entity) => {
+    const { prefabs, overlay } = original.serialise();
+    const e = this.entity(...prefabs);
+
+    for (const [componentName, data] of Object.entries(overlay))
+      e.add(this.getComponent(componentName), data);
+
+    return e;
+  };
 }
 
 export class Query {
   private entities: Set<Entity>;
 
   constructor(
+    public name: string,
     initial: readonly Entity[],
     public match: (en: Entity) => boolean,
   ) {
@@ -297,13 +315,15 @@ export class Query {
     else this.entities.delete(en);
   }
 
+  clear() {
+    this.entities.clear();
+  }
+
   remove(en: Entity) {
     this.entities.delete(en);
   }
 
-  get() {
-    return Array.from(this.entities);
-  }
+  get = () => Array.from(this.entities);
 }
 
 const ecs = new Manager();

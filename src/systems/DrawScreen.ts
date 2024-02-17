@@ -21,7 +21,9 @@ export default class DrawScreen {
 
   constructor(public g: Game) {
     this.dirty = true;
-    this.drawable = g.ecs.query({ all: [Appearance, Position] });
+    this.drawable = g.ecs.query("DrawScreen.drawable", {
+      all: [Appearance, Position],
+    });
 
     const redraw = () => (this.dirty = true);
     g.on("move", redraw);
@@ -54,14 +56,17 @@ export default class DrawScreen {
       }
     }
 
-    this.drawable.get().map((e) => {
-      const app = e.get(Appearance);
-      const pos = e.get(Position);
+    this.drawable
+      .get()
+      .sort((a, b) => a.get(Appearance).layer - b.get(Appearance).layer)
+      .map((e) => {
+        const app = e.get(Appearance);
+        const pos = e.get(Position);
 
-      const x = pos.x - scrollX;
-      const y = pos.y - scrollY;
-      if (term.isVisible(x, y)) term.drawChar(x, y, app.glyph, app.colour);
-    });
+        const x = pos.x - scrollX;
+        const y = pos.y - scrollY;
+        if (term.isVisible(x, y)) term.drawChar(x, y, app.glyph, app.colour);
+      });
 
     this.dirty = false;
   }

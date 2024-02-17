@@ -131,10 +131,7 @@ export default class Game extends EventEmitter<Events> {
   }
 
   private installCheats() {
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    const glob = window as any;
-
-    glob.stats = (name: string) => {
+    window.stats = (name: string) => {
       const monster = this.monsters.find((m) => m.name === name);
       if (!monster) return "unknown";
 

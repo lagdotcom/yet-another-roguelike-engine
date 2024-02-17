@@ -3416,8 +3416,7 @@ var Game = class extends import_eventemitter3.default {
     return [4, 4];
   }
   installCheats() {
-    const glob = window;
-    glob.stats = (name) => {
+    window.stats = (name) => {
       const monster = this.monsters.find((m2) => m2.name === name);
       if (!monster)
         return "unknown";

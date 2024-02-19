@@ -1,6 +1,5 @@
 import type { Cell } from "wglt";
 
-import { PlayerTag, Position } from "../components";
 import type Game from "../Game";
 import { outOfBounds } from "../Tile";
 
@@ -13,7 +12,7 @@ export default class PlayerFOV {
     this.scrolled = true;
 
     g.on("move", (who) => {
-      if (who.has(PlayerTag)) this.dirty = true;
+      if (who.has(g.co.PlayerTag)) this.dirty = true;
     });
 
     g.on("scroll", ([x, y]) => {
@@ -30,10 +29,10 @@ export default class PlayerFOV {
   process() {
     if (!this.dirty) return;
 
-    const { player, scrollX, scrollY, term } = this.g;
+    const { co, player, scrollX, scrollY, term } = this.g;
     if (this.scrolled) this.scroll(scrollX, scrollY);
 
-    const pos = player.get(Position);
+    const pos = player.get(co.Position);
     const x = pos.x - scrollX;
     const y = pos.y - scrollY;
     if (term.getCell(x, y)) {

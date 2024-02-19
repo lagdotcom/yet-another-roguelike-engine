@@ -494,6 +494,17 @@ var require_deepcopy = __commonJS({
 var import_debug2 = __toESM(require_browser());
 var import_eventemitter3 = __toESM(require_EventEmitter3());
 
+// node_modules/nanoid/non-secure/index.js
+var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
+var nanoid = (size = 21) => {
+  let id = "";
+  let i = size;
+  while (i--) {
+    id += urlAlphabet[Math.random() * 64 | 0];
+  }
+  return id;
+};
+
 // node_modules/random-seedable/src/PRNG.js
 var PRNG = class _PRNG {
   /**
@@ -2828,6 +2839,21 @@ var AmorphousAreaGenerator = class {
   }
 };
 
+// src/components.ts
+function registerComponents(ecs) {
+  return {
+    AI: ecs.register("AI"),
+    Appearance: ecs.register("Appearance"),
+    Carried: ecs.register("Carried"),
+    Inventory: ecs.register("Inventory"),
+    Item: ecs.register("Item"),
+    Position: ecs.register("Position"),
+    Stats: ecs.register("Stats"),
+    BlockerTag: ecs.register("Blocker"),
+    PlayerTag: ecs.register("Player")
+  };
+}
+
 // node_modules/deep-object-diff/mjs/utils.js
 var isDate = (d) => d instanceof Date;
 var isEmpty = (o) => Object.keys(o).length === 0;
@@ -2869,19 +2895,6 @@ var diff_default = diff;
 
 // src/ecs.ts
 var import_deepcopy2 = __toESM(require_deepcopy());
-
-// node_modules/nanoid/non-secure/index.js
-var urlAlphabet = "useandom-26T198340PX75pxJACKVERYMINDBUSHWOLF_GQZbfghjklqvwyzrict";
-var nanoid = (size = 21) => {
-  let id = "";
-  let i = size;
-  while (i--) {
-    id += urlAlphabet[Math.random() * 64 | 0];
-  }
-  return id;
-};
-
-// src/ecs.ts
 var Component = class {
   constructor(name) {
     this.name = name;
@@ -2901,8 +2914,8 @@ var Component = class {
   }
 };
 var BaseEntity = class {
-  constructor(ecs2, id, ...prefabs) {
-    this.ecs = ecs2;
+  constructor(ecs, id, ...prefabs) {
+    this.ecs = ecs;
     this.id = id;
     this.components = /* @__PURE__ */ new Set();
     this.prefabs = prefabs.map((pf) => pf.id);
@@ -2953,8 +2966,8 @@ var BaseEntity = class {
   }
 };
 var Entity = class extends BaseEntity {
-  constructor(ecs2, id, ...prefabs) {
-    super(ecs2, id, ...prefabs);
+  constructor(ecs, id, ...prefabs) {
+    super(ecs, id, ...prefabs);
     this.destroyed = false;
   }
   add(component, data) {
@@ -2983,7 +2996,8 @@ var Entity = class extends BaseEntity {
 var Prefab = class extends BaseEntity {
 };
 var Manager = class {
-  constructor() {
+  constructor(idGenerator) {
+    this.idGenerator = idGenerator;
     this.getPrefab = (name) => {
       const pf = this.prefabs[name];
       if (!pf)
@@ -2999,7 +3013,6 @@ var Manager = class {
     };
     this.components = /* @__PURE__ */ new Map();
     this.entities = /* @__PURE__ */ new Map();
-    this.idGenerator = () => nanoid();
     this.prefabs = {};
     this.queries = [];
   }
@@ -3108,20 +3121,6 @@ var Query = class {
     this.entities.delete(en);
   }
 };
-var ecs = new Manager();
-var ecs_default = ecs;
-window.ecs = ecs;
-
-// src/components.ts
-var AI = ecs_default.register("AI");
-var Appearance = ecs_default.register("Appearance");
-var Carried = ecs_default.register("Carried");
-var Inventory = ecs_default.register("Inventory");
-var Item = ecs_default.register("Item");
-var Position = ecs_default.register("Position");
-var Stats = ecs_default.register("Stats");
-var BlockerTag = ecs_default.register("Blocker");
-var PlayerTag = ecs_default.register("Player");
 
 // res/all.category
 var all_exports = {};
@@ -3179,7 +3178,7 @@ var DrawScreen = class {
     this.g = g2;
     this.dirty = true;
     this.drawable = g2.ecs.query("DrawScreen.drawable", {
-      all: [Appearance, Position]
+      all: [g2.co.Appearance, g2.co.Position]
     });
     const redraw = () => this.dirty = true;
     g2.on("move", redraw);
@@ -3188,14 +3187,14 @@ var DrawScreen = class {
   process() {
     if (!this.dirty)
       return;
-    const { map, scrollX, scrollY, term } = this.g;
+    const { co, map, scrollX, scrollY, term } = this.g;
     term.fillRect(0, 0, term.width, term.height, " ", -1, 0);
     for (let yo = 0; yo < term.height; yo++) {
       const y2 = yo + scrollY;
       for (let xo = 0; xo < term.width; xo++) {
         const x = xo + scrollX;
-        const c2 = term.getCell(xo, yo);
-        if (c2?.explored && map.contains(x, y2)) {
+        const cell = term.getCell(xo, yo);
+        if (cell?.explored && map.contains(x, y2)) {
           const tile = map.get(x, y2);
           let colour = tile.colour;
           let bg = visibleBg;
@@ -3207,9 +3206,9 @@ var DrawScreen = class {
         }
       }
     }
-    this.drawable.get().sort((a, b) => a.get(Appearance).layer - b.get(Appearance).layer).map((e) => {
-      const app = e.get(Appearance);
-      const pos = e.get(Position);
+    this.drawable.get().sort((a, b) => a.get(co.Appearance).layer - b.get(co.Appearance).layer).map((e) => {
+      const app = e.get(co.Appearance);
+      const pos = e.get(co.Position);
       const x = pos.x - scrollX;
       const y2 = pos.y - scrollY;
       if (term.isVisible(x, y2))
@@ -3234,7 +3233,7 @@ var PlayerFOV = class {
     this.dirty = true;
     this.scrolled = true;
     g2.on("move", (who) => {
-      if (who.has(PlayerTag))
+      if (who.has(g2.co.PlayerTag))
         this.dirty = true;
     });
     g2.on("scroll", ([x, y2]) => {
@@ -3248,10 +3247,10 @@ var PlayerFOV = class {
   process() {
     if (!this.dirty)
       return;
-    const { player, scrollX, scrollY, term } = this.g;
+    const { co, player, scrollX, scrollY, term } = this.g;
     if (this.scrolled)
       this.scroll(scrollX, scrollY);
-    const pos = player.get(Position);
+    const pos = player.get(co.Position);
     const x = pos.x - scrollX;
     const y2 = pos.y - scrollY;
     if (term.getCell(x, y2)) {
@@ -3294,72 +3293,81 @@ var PlayerFOV = class {
 function equalXY(a, b) {
   return a.x === b.x && a.y === b.y;
 }
-function incrementMap(map, key, amount = 1) {
-  const old = map.get(key) ?? 0;
-  map.set(key, old + amount);
-}
 
 // src/systems/PlayerGet.ts
 var inventorySlots = "abcdefghijklmnopqrstuvwxyz";
-function addToInventory(carrier, item, getCarriedItems, duplicate) {
-  const { capacity } = carrier.get(Inventory);
-  const { id, maxStack, quantity } = item.get(Item);
-  const max = maxStack ?? 1;
+function addToInventory(carrier, item, co, getCarriedItems, duplicate) {
+  const slotNames = inventorySlots.slice(0, carrier.get(co.Inventory).capacity);
+  const ii = item.get(co.Item);
+  const max = ii.maxStack ?? 1;
   const allInventory = getCarriedItems().filter(
-    (e) => e.get(Carried).by === carrier.id
+    (e) => e.get(co.Carried).by === carrier.id
   );
+  const usedSlots = new Set(allInventory.map((e) => e.get(co.Carried).slot));
   const matches = allInventory.filter((e) => {
-    const ei = e.get(Item);
-    return ei.id === id && ei.quantity < max;
+    const ei = e.get(co.Item);
+    return ei.id === ii.id && ei.quantity < max;
   });
   const assignments = /* @__PURE__ */ new Map();
-  let remaining = quantity;
-  while (remaining) {
+  while (ii.quantity > 0) {
     if (matches.length) {
       const match = matches[0];
-      const mc = match.get(Carried);
-      const mi = match.get(Item);
-      remaining--;
+      const mc = match.get(co.Carried);
+      const mi = match.get(co.Item);
+      ii.quantity--;
       mi.quantity++;
-      incrementMap(assignments, mc.slot);
+      assignments.set(mc.slot, mi.quantity);
       if (mi.quantity >= max)
         matches.splice(0, 1);
       continue;
     }
-    if (allInventory.length >= capacity)
-      item.get(Item).quantity = remaining;
-    const slot = inventorySlots[allInventory.length];
+    let slot = "";
+    for (const ch of slotNames) {
+      if (!usedSlots.has(ch)) {
+        slot = ch;
+        break;
+      }
+    }
+    if (!slot)
+      break;
     const entry = duplicate(item);
-    entry.remove(Position);
-    entry.add(Carried, { by: carrier.id, slot });
+    entry.remove(co.Position);
+    entry.add(co.Carried, { by: carrier.id, slot });
     allInventory.push(entry);
-    remaining--;
-    entry.get(Item).quantity = 1;
+    matches.push(entry);
+    ii.quantity--;
+    entry.get(co.Item).quantity = 1;
     assignments.set(slot, 1);
+    usedSlots.add(slot);
   }
-  return { assignments, remaining };
+  return { assignments, remaining: ii.quantity };
 }
 var PlayerGet = class {
   constructor(g2) {
     this.g = g2;
-    this.carried = g2.ecs.query("PlayerGet.carried", { all: [Carried, Item] });
-    this.items = g2.ecs.query("PlayerGet.items", { all: [Position, Item] });
+    this.carried = g2.ecs.query("PlayerGet.carried", {
+      all: [g2.co.Carried, g2.co.Item]
+    });
+    this.items = g2.ecs.query("PlayerGet.items", {
+      all: [g2.co.Position, g2.co.Item]
+    });
   }
   addToInventory(carrier, item) {
     return addToInventory(
       carrier,
       item,
+      this.g.co,
       this.carried.get,
       this.g.ecs.duplicate
     );
   }
   process() {
-    const { player, term } = this.g;
+    const { co, player, term } = this.g;
     const active = term.isKeyPressed("Comma") || term.isKeyPressed("KeyG");
     if (!active)
       return;
-    const pos = player.get(Position);
-    const items = this.items.get().filter((e) => equalXY(pos, e.get(Position)));
+    const pos = player.get(co.Position);
+    const items = this.items.get().filter((e) => equalXY(pos, e.get(co.Position)));
     if (!items.length) {
       this.g.emit("log", "no items here");
       return;
@@ -3370,7 +3378,7 @@ var PlayerGet = class {
       if (!remaining)
         removeItems.push(item);
       for (const [slot, qty] of assignments)
-        this.g.emit("log", `(${slot}) ${qty}x ${item.get(Appearance).name}`);
+        this.g.emit("log", `(${slot}) ${qty}x ${item.get(co.Appearance).name}`);
     }
     for (const item of removeItems)
       item.destroy();
@@ -3428,15 +3436,15 @@ var PlayerMove = class {
       }
     };
     g2.on("move", (who) => {
-      if (who.has(PlayerTag)) {
-        const { x, y: y2 } = who.get(Position);
+      if (who.has(g2.co.PlayerTag)) {
+        const { x, y: y2 } = who.get(g2.co.Position);
         this.scrollTo([x, y2]);
       }
     });
     g2.on("startLevel", this.scrollTo);
   }
   process() {
-    const { player, term } = this.g;
+    const { co, player, term } = this.g;
     const move = term.getMovementKey(movementKeys);
     if (!move)
       return;
@@ -3448,7 +3456,7 @@ var PlayerMove = class {
       this.g.emit("scroll", [newX, newY]);
       return;
     }
-    const pos = player.get(Position);
+    const pos = player.get(co.Position);
     const { x, y: y2 } = pos;
     if (!this.g.canMove(x, y2, move.x, move.y))
       return;
@@ -3475,16 +3483,19 @@ var Game = class extends import_eventemitter3.default {
       this.debug("event", event, ...args);
       return super.emit(event, ...args);
     };
-    this.ecs = ecs_default;
-    this.blockers = ecs_default.query("Game.blockers", { all: [Position, BlockerTag] });
-    ecs_default.prefab("creature").add(BlockerTag, {});
-    ecs_default.prefab("player", "creature").add(Appearance, {
+    const ecs = this.ecs = new Manager(nanoid);
+    const co = this.co = registerComponents(ecs);
+    this.blockers = ecs.query("Game.blockers", {
+      all: [co.Position, co.BlockerTag]
+    });
+    ecs.prefab("creature").add(co.BlockerTag, {});
+    ecs.prefab("player", "creature").add(co.Appearance, {
       name: "you",
       layer: 2 /* Player */,
       colour: y.WHITE,
       glyph: "@".charCodeAt(0)
-    }).add(Inventory, { capacity: 10 }).add(Stats, this.getPlayerStats(3, 3, 3, 1)).add(PlayerTag, {});
-    this.player = ecs_default.entity("player");
+    }).add(co.Inventory, { capacity: 10 }).add(co.Stats, this.getPlayerStats(3, 3, 3, 1)).add(co.PlayerTag, {});
+    this.player = ecs.entity("player");
     this.rng = random;
     this.debug("seed", this.rng.seed);
     this.scrollX = 0;
@@ -3499,13 +3510,13 @@ var Game = class extends import_eventemitter3.default {
     );
     try {
       const [x, y2] = this.load();
-      this.player.add(Position, { x, y: y2 });
-      ecs_default.entity().add(Appearance, {
+      this.player.add(co.Position, { x, y: y2 });
+      ecs.entity().add(co.Appearance, {
         name: "mystery item",
         layer: 0 /* Item */,
         colour: y.YELLOW,
         glyph: "?".charCodeAt(0)
-      }).add(Position, { x, y: y2 }).add(Item, { id: "mystery", quantity: 1 });
+      }).add(co.Position, { x, y: y2 }).add(co.Item, { id: "mystery", quantity: 1 });
       this.emit("startLevel", [x, y2]);
     } catch (e) {
       this.fatal(e);
@@ -3513,25 +3524,22 @@ var Game = class extends import_eventemitter3.default {
     }
   }
   loadResources() {
-    const { ecs: ecs2 } = this;
-    const palette = loadPalette();
-    const categories = loadAllCategories();
-    const monsters = loadAllMonsters();
-    ecs2.prefab("monster", "creature");
+    const { ecs, co } = this;
+    const palette = this.palette = loadPalette();
+    const categories = this.categories = loadAllCategories();
+    const monsters = this.monsters = loadAllMonsters();
+    ecs.prefab("monster", "creature");
     for (const cat of categories)
-      ecs2.prefab(catId(cat.logo), "monster");
+      ecs.prefab(catId(cat.logo), "monster");
     for (const monster of monsters) {
       const colour = palette[monster.col] || palette.white;
-      ecs2.prefab(monId(monster.name), catId(monster.cat)).add(Appearance, {
+      ecs.prefab(monId(monster.name), catId(monster.cat)).add(co.Appearance, {
         name: monster.hname ?? monster.name,
         layer: 1 /* Monster */,
         colour,
         glyph: monster.cat.charCodeAt(0)
-      }).add(Stats, this.getMonsterStats(monster));
+      }).add(co.Stats, this.getMonsterStats(monster));
     }
-    this.palette = palette;
-    this.categories = categories;
-    this.monsters = monsters;
   }
   load() {
     const aa = new AmorphousAreaGenerator(this, 48);
@@ -3546,7 +3554,7 @@ var Game = class extends import_eventemitter3.default {
       if (!monster)
         return "unknown";
       const stats = this.getMonsterStats(monster);
-      return getAllTheStats(stats, this.player.get(Stats));
+      return getAllTheStats(stats, this.player.get(this.co.Stats));
     };
   }
   fatal(e) {
@@ -3568,7 +3576,7 @@ var Game = class extends import_eventemitter3.default {
     if (this.map.isBlocked(x, y2))
       return true;
     for (const e of this.blockers.get()) {
-      const pos = e.get(Position);
+      const pos = e.get(this.co.Position);
       if (equalXY(pos, { x, y: y2 }))
         return true;
     }
@@ -3580,9 +3588,9 @@ var Game = class extends import_eventemitter3.default {
     return this.spawnMonster(x, y2, monster);
   }
   spawnMonster(x, y2, monster) {
-    const { categories, ecs: ecs2 } = this;
+    const { co, categories, ecs } = this;
     const category = categories.find((cat) => cat.logo === monster.cat);
-    const e = ecs2.entity(monId(monster.name)).add(Position, { x, y: y2 });
+    const e = ecs.entity(monId(monster.name)).add(co.Position, { x, y: y2 });
     this.debug("spawn %d,%d %s (%s)", x, y2, monster.name, category?.name);
     return e;
   }

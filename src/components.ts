@@ -1,4 +1,4 @@
-import ecs, { type EntityID } from "./ecs";
+import { type EntityID, type Manager } from "./ecs";
 import type { Layer } from "./types";
 
 export interface IAI {
@@ -43,13 +43,19 @@ export interface IStats {
   stamina: number;
 }
 
-export const AI = ecs.register<IAI>("AI");
-export const Appearance = ecs.register<IAppearance>("Appearance");
-export const Carried = ecs.register<ICarried>("Carried");
-export const Inventory = ecs.register<IInventory>("Inventory");
-export const Item = ecs.register<IItem>("Item");
-export const Position = ecs.register<IPosition>("Position");
-export const Stats = ecs.register<IStats>("Stats");
+export function registerComponents(ecs: Manager) {
+  return {
+    AI: ecs.register<IAI>("AI"),
+    Appearance: ecs.register<IAppearance>("Appearance"),
+    Carried: ecs.register<ICarried>("Carried"),
+    Inventory: ecs.register<IInventory>("Inventory"),
+    Item: ecs.register<IItem>("Item"),
+    Position: ecs.register<IPosition>("Position"),
+    Stats: ecs.register<IStats>("Stats"),
 
-export const BlockerTag = ecs.register<never>("Blocker");
-export const PlayerTag = ecs.register<never>("Player");
+    BlockerTag: ecs.register<never>("Blocker"),
+    PlayerTag: ecs.register<never>("Player"),
+  } as const;
+}
+
+export type AllComponents = ReturnType<typeof registerComponents>;

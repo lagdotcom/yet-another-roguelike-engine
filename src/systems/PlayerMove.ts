@@ -1,6 +1,5 @@
 import { type KeyCode, Keys, Point } from "wglt";
 
-import { PlayerTag, Position } from "../components";
 import type { XY } from "../events";
 import type Game from "../Game";
 
@@ -42,8 +41,8 @@ const movementKeys: Partial<Record<KeyCode, Point>> = {
 export default class PlayerMove {
   constructor(public g: Game) {
     g.on("move", (who) => {
-      if (who.has(PlayerTag)) {
-        const { x, y } = who.get(Position);
+      if (who.has(g.co.PlayerTag)) {
+        const { x, y } = who.get(g.co.Position);
         this.scrollTo([x, y]);
       }
     });
@@ -69,7 +68,7 @@ export default class PlayerMove {
   };
 
   process() {
-    const { player, term } = this.g;
+    const { co, player, term } = this.g;
 
     const move = term.getMovementKey(movementKeys);
     if (!move) return;
@@ -85,7 +84,7 @@ export default class PlayerMove {
       return;
     }
 
-    const pos = player.get(Position);
+    const pos = player.get(co.Position);
     const { x, y } = pos;
 
     if (!this.g.canMove(x, y, move.x, move.y)) return;

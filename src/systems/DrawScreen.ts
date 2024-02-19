@@ -1,6 +1,5 @@
 import { fromRgb } from "wglt";
 
-import { Appearance, Position } from "../components";
 import type { Query } from "../ecs";
 import type Game from "../Game";
 
@@ -22,7 +21,7 @@ export default class DrawScreen {
   constructor(public g: Game) {
     this.dirty = true;
     this.drawable = g.ecs.query("DrawScreen.drawable", {
-      all: [Appearance, Position],
+      all: [g.co.Appearance, g.co.Position],
     });
 
     const redraw = () => (this.dirty = true);
@@ -33,7 +32,7 @@ export default class DrawScreen {
   process() {
     if (!this.dirty) return;
 
-    const { map, scrollX, scrollY, term } = this.g;
+    const { co, map, scrollX, scrollY, term } = this.g;
 
     // term.clear();
     term.fillRect(0, 0, term.width, term.height, " ", -1, 0);
@@ -42,8 +41,8 @@ export default class DrawScreen {
       for (let xo = 0; xo < term.width; xo++) {
         const x = xo + scrollX;
 
-        const c = term.getCell(xo, yo);
-        if (c?.explored && map.contains(x, y)) {
+        const cell = term.getCell(xo, yo);
+        if (cell?.explored && map.contains(x, y)) {
           const tile = map.get(x, y);
           let colour = tile.colour;
           let bg = visibleBg;
@@ -58,10 +57,10 @@ export default class DrawScreen {
 
     this.drawable
       .get()
-      .sort((a, b) => a.get(Appearance).layer - b.get(Appearance).layer)
+      .sort((a, b) => a.get(co.Appearance).layer - b.get(co.Appearance).layer)
       .map((e) => {
-        const app = e.get(Appearance);
-        const pos = e.get(Position);
+        const app = e.get(co.Appearance);
+        const pos = e.get(co.Position);
 
         const x = pos.x - scrollX;
         const y = pos.y - scrollY;

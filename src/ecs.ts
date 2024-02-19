@@ -1,6 +1,5 @@
 import { diff } from "deep-object-diff";
 import deepcopy from "deepcopy";
-import { nanoid } from "nanoid/non-secure";
 
 export type EntityID = string;
 
@@ -150,14 +149,12 @@ export class Prefab extends BaseEntity {}
 export class Manager {
   private components: Map<string, Component<unknown>>;
   private entities: Map<EntityID, Entity>;
-  private idGenerator: () => EntityID;
   private prefabs: Record<string, Prefab>;
   private queries: Query[];
 
-  constructor() {
+  constructor(private idGenerator: () => EntityID) {
     this.components = new Map();
     this.entities = new Map();
-    this.idGenerator = () => nanoid();
     this.prefabs = {};
     this.queries = [];
   }
@@ -325,9 +322,3 @@ export class Query {
 
   get = () => Array.from(this.entities);
 }
-
-const ecs = new Manager();
-export default ecs;
-
-// TODO: debugging only
-window.ecs = ecs;

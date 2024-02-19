@@ -1,57 +1,66 @@
-import { Appearance, Carried, Inventory, Item, Position } from "../components";
+import type { AllComponents } from "../components";
 import type { Entity, Query } from "../ecs";
 import type Game from "../Game";
-import { equalXY, incrementMap } from "../utils";
+import { equalXY } from "../utils";
 
 const inventorySlots = "abcdefghijklmnopqrstuvwxyz";
 
-function addToInventory(
+export function addToInventory(
   carrier: Entity,
   item: Entity,
+  co: AllComponents,
   getCarriedItems: () => Entity[],
   duplicate: (e: Entity) => Entity,
 ) {
-  const { capacity } = carrier.get(Inventory);
-  const { id, maxStack, quantity } = item.get(Item);
-  const max = maxStack ?? 1;
+  const slotNames = inventorySlots.slice(0, carrier.get(co.Inventory).capacity);
+  const ii = item.get(co.Item);
+  const max = ii.maxStack ?? 1;
 
   const allInventory = getCarriedItems().filter(
-    (e) => e.get(Carried).by === carrier.id,
+    (e) => e.get(co.Carried).by === carrier.id,
   );
+  const usedSlots = new Set(allInventory.map((e) => e.get(co.Carried).slot));
   const matches = allInventory.filter((e) => {
-    const ei = e.get(Item);
-    return ei.id === id && ei.quantity < max;
+    const ei = e.get(co.Item);
+    return ei.id === ii.id && ei.quantity < max;
   });
 
   const assignments = new Map<string, number>();
-  let remaining = quantity;
-  while (remaining) {
+  while (ii.quantity > 0) {
     if (matches.length) {
       const match = matches[0];
-      const mc = match.get(Carried);
-      const mi = match.get(Item);
-      remaining--;
+      const mc = match.get(co.Carried);
+      const mi = match.get(co.Item);
+      ii.quantity--;
       mi.quantity++;
-      incrementMap(assignments, mc.slot);
+      assignments.set(mc.slot, mi.quantity);
 
       if (mi.quantity >= max) matches.splice(0, 1);
       continue;
     }
 
-    if (allInventory.length >= capacity) item.get(Item).quantity = remaining;
+    let slot = "";
+    for (const ch of slotNames) {
+      if (!usedSlots.has(ch)) {
+        slot = ch;
+        break;
+      }
+    }
+    if (!slot) break;
 
-    const slot = inventorySlots[allInventory.length];
     const entry = duplicate(item);
-    entry.remove(Position);
-    entry.add(Carried, { by: carrier.id, slot });
+    entry.remove(co.Position);
+    entry.add(co.Carried, { by: carrier.id, slot });
     allInventory.push(entry);
+    matches.push(entry);
 
-    remaining--;
-    entry.get(Item).quantity = 1;
+    ii.quantity--;
+    entry.get(co.Item).quantity = 1;
     assignments.set(slot, 1);
+    usedSlots.add(slot);
   }
 
-  return { assignments, remaining };
+  return { assignments, remaining: ii.quantity };
 }
 
 export default class PlayerGet {
@@ -59,26 +68,33 @@ export default class PlayerGet {
   items: Query;
 
   constructor(public g: Game) {
-    this.carried = g.ecs.query("PlayerGet.carried", { all: [Carried, Item] });
-    this.items = g.ecs.query("PlayerGet.items", { all: [Position, Item] });
+    this.carried = g.ecs.query("PlayerGet.carried", {
+      all: [g.co.Carried, g.co.Item],
+    });
+    this.items = g.ecs.query("PlayerGet.items", {
+      all: [g.co.Position, g.co.Item],
+    });
   }
 
   addToInventory(carrier: Entity, item: Entity) {
     return addToInventory(
       carrier,
       item,
+      this.g.co,
       this.carried.get,
       this.g.ecs.duplicate,
     );
   }
 
   process() {
-    const { player, term } = this.g;
+    const { co, player, term } = this.g;
     const active = term.isKeyPressed("Comma") || term.isKeyPressed("KeyG");
     if (!active) return;
 
-    const pos = player.get(Position);
-    const items = this.items.get().filter((e) => equalXY(pos, e.get(Position)));
+    const pos = player.get(co.Position);
+    const items = this.items
+      .get()
+      .filter((e) => equalXY(pos, e.get(co.Position)));
 
     if (!items.length) {
       this.g.emit("log", "no items here");
@@ -92,7 +108,7 @@ export default class PlayerGet {
 
       // TODO weird plurals
       for (const [slot, qty] of assignments)
-        this.g.emit("log", `(${slot}) ${qty}x ${item.get(Appearance).name}`);
+        this.g.emit("log", `(${slot}) ${qty}x ${item.get(co.Appearance).name}`);
     }
 
     for (const item of removeItems) item.destroy();

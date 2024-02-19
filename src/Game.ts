@@ -1,20 +1,16 @@
 import debug, { type Debugger } from "debug";
 import EventEmitter from "eventemitter3";
+import { nanoid } from "nanoid/non-secure";
 import { random, type XORShift64 } from "random-seedable";
 import { Colors, GUI, MessageDialog, Terminal } from "wglt";
 
 import AmorphousAreaGenerator from "./AmorphousAreaGenerator";
 import {
-  Appearance,
-  BlockerTag,
-  Inventory,
+  type AllComponents,
   type IStats,
-  Item,
-  PlayerTag,
-  Position,
-  Stats,
+  registerComponents,
 } from "./components";
-import ecs, { type Entity, type Manager, type Query } from "./ecs";
+import { type Entity, Manager, type Query } from "./ecs";
 import type Events from "./events";
 import {
   getAllTheStats,
@@ -47,6 +43,7 @@ const monId = (name: string) => `M:${name}` as const;
 
 export default class Game extends EventEmitter<Events> {
   blockers: Query;
+  co: AllComponents;
   categories!: MonsterCategory[];
   debug: Debugger;
   ecs: Manager;
@@ -74,22 +71,26 @@ export default class Game extends EventEmitter<Events> {
       return super.emit(event, ...args);
     };
 
-    this.ecs = ecs;
-    this.blockers = ecs.query("Game.blockers", { all: [Position, BlockerTag] });
+    const ecs = (this.ecs = new Manager(nanoid));
+    const co = (this.co = registerComponents(ecs));
 
-    ecs.prefab("creature").add(BlockerTag, {});
+    this.blockers = ecs.query("Game.blockers", {
+      all: [co.Position, co.BlockerTag],
+    });
+
+    ecs.prefab("creature").add(co.BlockerTag, {});
 
     ecs
       .prefab("player", "creature")
-      .add(Appearance, {
+      .add(co.Appearance, {
         name: "you",
         layer: Layer.Player,
         colour: Colors.WHITE,
         glyph: "@".charCodeAt(0),
       })
-      .add(Inventory, { capacity: 10 })
-      .add(Stats, this.getPlayerStats(3, 3, 3, 1))
-      .add(PlayerTag, {});
+      .add(co.Inventory, { capacity: 10 })
+      .add(co.Stats, this.getPlayerStats(3, 3, 3, 1))
+      .add(co.PlayerTag, {});
     this.player = ecs.entity("player");
 
     this.rng = random;
@@ -110,18 +111,18 @@ export default class Game extends EventEmitter<Events> {
 
     try {
       const [x, y] = this.load();
-      this.player.add(Position, { x, y });
+      this.player.add(co.Position, { x, y });
 
       ecs
         .entity()
-        .add(Appearance, {
+        .add(co.Appearance, {
           name: "mystery item",
           layer: Layer.Item,
           colour: Colors.YELLOW,
           glyph: "?".charCodeAt(0),
         })
-        .add(Position, { x, y })
-        .add(Item, { id: "mystery", quantity: 1 });
+        .add(co.Position, { x, y })
+        .add(co.Item, { id: "mystery", quantity: 1 });
 
       this.emit("startLevel", [x, y]);
     } catch (e) {
@@ -137,10 +138,10 @@ export default class Game extends EventEmitter<Events> {
   };
 
   private loadResources() {
-    const { ecs } = this;
-    const palette = loadPalette();
-    const categories = loadAllCategories();
-    const monsters = loadAllMonsters();
+    const { ecs, co } = this;
+    const palette = (this.palette = loadPalette());
+    const categories = (this.categories = loadAllCategories());
+    const monsters = (this.monsters = loadAllMonsters());
 
     ecs.prefab("monster", "creature");
 
@@ -151,18 +152,14 @@ export default class Game extends EventEmitter<Events> {
 
       ecs
         .prefab(monId(monster.name), catId(monster.cat))
-        .add(Appearance, {
+        .add(co.Appearance, {
           name: monster.hname ?? monster.name,
           layer: Layer.Monster,
           colour,
           glyph: monster.cat.charCodeAt(0),
         })
-        .add(Stats, this.getMonsterStats(monster));
+        .add(co.Stats, this.getMonsterStats(monster));
     }
-
-    this.palette = palette;
-    this.categories = categories;
-    this.monsters = monsters;
   }
 
   private load(): [x: number, y: number] {
@@ -179,7 +176,7 @@ export default class Game extends EventEmitter<Events> {
       if (!monster) return "unknown";
 
       const stats = this.getMonsterStats(monster);
-      return getAllTheStats(stats, this.player.get(Stats));
+      return getAllTheStats(stats, this.player.get(this.co.Stats));
     };
   }
 
@@ -212,7 +209,7 @@ export default class Game extends EventEmitter<Events> {
     if (this.map.isBlocked(x, y)) return true;
 
     for (const e of this.blockers.get()) {
-      const pos = e.get(Position);
+      const pos = e.get(this.co.Position);
       if (equalXY(pos, { x, y })) return true;
     }
 
@@ -226,11 +223,11 @@ export default class Game extends EventEmitter<Events> {
   }
 
   spawnMonster(x: number, y: number, monster: Monster) {
-    const { categories, ecs } = this;
+    const { co, categories, ecs } = this;
 
     const category = categories.find((cat) => cat.logo === monster.cat);
 
-    const e = ecs.entity(monId(monster.name)).add(Position, { x, y });
+    const e = ecs.entity(monId(monster.name)).add(co.Position, { x, y });
 
     this.debug("spawn %d,%d %s (%s)", x, y, monster.name, category?.name);
     return e;
